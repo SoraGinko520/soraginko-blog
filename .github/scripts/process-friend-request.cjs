@@ -20,6 +20,8 @@ const DEFAULT_TAG = "Blog";
 const MAX_CHECKS = 4;
 const DNS_TIMEOUT = 5000;
 const PAGE_TIMEOUT = 12000;
+const BACKLINK_TIMEOUT_MS = 8000;
+const MAX_DEBUG_HOSTS = 50;
 const MAX_REQUESTS = 150;
 const CHECK_MARKER = "<!-- sora-friend-check:";
 const INFRASTRUCTURE_MARKER = "<!-- sora-friend-infrastructure -->";
@@ -311,6 +313,59 @@ function updateFriendsContent(content, data) {
 		);
 }
 
+// Playwright 会序列化此函数到主页面，标准化函数必须在同一作用域内，不能依赖 Node 闭包。
+function hasSiteBacklink(expectedHost) {
+	function normalizeHostname(hostname) {
+		return hostname
+			.trim()
+			.toLowerCase()
+			.replace(/\.$/, "")
+			.replace(/^www\./, "");
+	}
+	const normalizedHost = normalizeHostname(expectedHost);
+	return Array.from(document.querySelectorAll("a[href]")).some((item) => {
+		try {
+			const link = new URL(item.href);
+			return (
+				["http:", "https:"].includes(link.protocol) &&
+				normalizeHostname(link.hostname) === normalizedHost
+			);
+		} catch {
+			return false;
+		}
+	});
+}
+
+async function logBacklinkDiagnostics(page) {
+	try {
+		const finalUrl = new URL(page.url());
+		// 查询参数和片段可能带临时凭据，只记录页面定位所需的域名与路径。
+		finalUrl.search = "";
+		finalUrl.hash = "";
+		const diagnostics = await page.evaluate((limit) => {
+			const links = document.querySelectorAll("a[href]");
+			const hosts = new Set();
+			for (const item of links) {
+				try {
+					const link = new URL(item.href);
+					if (["http:", "https:"].includes(link.protocol))
+						hosts.add(link.hostname);
+				} catch {
+					// 非 URL 链接不进入诊断名单。
+				}
+				if (hosts.size >= limit) break;
+			}
+			return { linkCount: links.length, hosts: [...hosts] };
+		}, MAX_DEBUG_HOSTS);
+		console.log("Friend page URL (without query/fragment):", finalUrl.href);
+		console.log("Friend page a[href] count:", diagnostics.linkCount);
+		console.log("Friend page link hosts:", diagnostics.hosts);
+	} catch {
+		// 页面已经关闭或执行环境失效时，不让调试采集覆盖原检查结论。
+		console.warn("Friend page backlink diagnostics unavailable.");
+	}
+}
+
 async function validateFriendPage(pageUrl) {
 	await assertPublicUrl(pageUrl);
 	let browser;
@@ -351,29 +406,17 @@ async function validateFriendPage(pageUrl) {
 		await assertPublicUrl(page.url());
 		const host = new URL(SITE_INFO.url).hostname;
 		try {
-			await page.waitForFunction(
-				(expectedHost) =>
-					Array.from(document.querySelectorAll("a[href]")).some((item) => {
-						try {
-							const link = new URL(item.href);
-							return (
-								["http:", "https:"].includes(link.protocol) &&
-								link.hostname === expectedHost
-							);
-						} catch {
-							return false;
-						}
-					}),
-				host,
-				{ timeout: 5000 },
-			);
+			await page.waitForFunction(hasSiteBacklink, host, {
+				timeout: BACKLINK_TIMEOUT_MS,
+			});
 		} catch (error) {
 			if (!browser.isConnected())
 				throw new FriendCheckInfrastructureError(error);
+			await logBacklinkDiagnostics(page);
 			return {
 				ok: false,
 				reason:
-					"未找到真正链接到 soraginko.moe 的 a 标签；仅包含名称或网址文本不能通过。",
+					'未在友链页面中找到指向 soraginko.moe（含 www）的有效超链接。请确认本站已通过 <a href="..."> 形式加入友链；普通文本、跳转包装链接，或在 8 秒等待窗口内尚未渲染完成的内容不会通过检查。',
 			};
 		}
 		return { ok: true };
