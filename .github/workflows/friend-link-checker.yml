@@ -24,8 +24,10 @@ jobs:
        (github.event.comment.user.type != 'Bot' &&
         (startsWith(github.event.comment.body, '/approve-friend') ||
          startsWith(github.event.comment.body, '/recheck-friend'))))
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     timeout-minutes: 20
+    env:
+      PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/friend-link-browsers
     permissions:
       contents: write
       issues: write
@@ -46,6 +48,50 @@ jobs:
       # 仅此 CI 下载与运行现有 Playwright，博客开发与本地验收不运行它。
       - name: Install Chromium for CI validation
         run: pnpm exec playwright install --with-deps chromium
+      # 仅放行本次安装的浏览器路径，不关闭全局 AppArmor 或 Chromium 沙箱。
+      - name: Configure Chromium sandbox permissions
+        id: sandbox
+        continue-on-error: true
+        shell: bash
+        run: |
+          set -euo pipefail
+          mapfile -t browser_executables < <(find "$PLAYWRIGHT_BROWSERS_PATH" -maxdepth 3 -type f \( -name chrome -o -name chrome-headless-shell \) | sort)
+          if (( ${#browser_executables[@]} == 0 )); then
+            echo "::error::No installed Chromium executables found."
+            exit 1
+          fi
+          if [[ "$(cat /sys/module/apparmor/parameters/enabled 2>/dev/null || true)" == "Y" ]]; then
+            command -v apparmor_parser >/dev/null
+            profile_file="$(mktemp)"
+            trap 'rm -f "$profile_file"' EXIT
+            {
+              printf 'abi <abi/4.0>,\ninclude <tunables/global>\n'
+              for index in "${!browser_executables[@]}"; do
+                browser_executable="$(realpath "${browser_executables[$index]}")"
+                if [[ "$browser_executable" != "$PLAYWRIGHT_BROWSERS_PATH/"* ]]; then
+                  echo "Unexpected browser executable location." >&2
+                  exit 1
+                fi
+                printf 'profile sora-friend-browser-%s "%s" flags=(unconfined) {\n  userns,\n}\n' "$index" "$browser_executable"
+              done
+            } > "$profile_file"
+            sudo install -o root -g root -m 0644 "$profile_file" /etc/apparmor.d/sora-friend-browsers
+            sudo apparmor_parser -r /etc/apparmor.d/sora-friend-browsers
+          fi
+      - name: Verify sandboxed Chromium startup
+        id: browser
+        if: steps.sandbox.outcome == 'success'
+        continue-on-error: true
+        run: |
+          node <<'NODE'
+          const handler = require('./.github/scripts/process-friend-request.cjs');
+          handler.checkBrowserEnvironment().then(() => {
+            console.log('Sandboxed Chromium startup verified.');
+          }).catch((error) => {
+            console.error(error.cause?.stack || error.stack);
+            process.exitCode = 1;
+          });
+          NODE
       - name: Validate and process friend request
         uses: actions/github-script@v7
         with:
@@ -53,4 +99,5 @@ jobs:
           script: |
             const path = require('node:path');
             const handler = require(path.join(process.env.GITHUB_WORKSPACE, '.github/scripts/process-friend-request.cjs'));
-            await handler({ github, context, core });
+            const browserReady = ${{ steps.sandbox.outcome == 'success' && steps.browser.outcome == 'success' }};
+            await handler({ github, context, core, browserReady });

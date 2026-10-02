@@ -22,11 +22,44 @@ const DNS_TIMEOUT = 5000;
 const PAGE_TIMEOUT = 12000;
 const MAX_REQUESTS = 150;
 const CHECK_MARKER = "<!-- sora-friend-check:";
+const INFRASTRUCTURE_MARKER = "<!-- sora-friend-infrastructure -->";
 const LABELS = {
 	"friend-link": "72b8db",
 	"needs-update": "d4933b",
 	待审核: "5f91b0",
 };
+
+class FriendCheckInfrastructureError extends Error {
+	constructor(cause) {
+		super("友链检查机器人的浏览器运行环境异常。", { cause });
+		this.name = "FriendCheckInfrastructureError";
+	}
+}
+
+async function launchValidationBrowser() {
+	// 浏览器进程只得到运行所需环境，不继承 GitHub token/Action 凭据。
+	const browserEnv = Object.fromEntries(
+		[
+			"PATH",
+			"HOME",
+			"LANG",
+			"TMPDIR",
+			"XDG_CACHE_HOME",
+			"PLAYWRIGHT_BROWSERS_PATH",
+		]
+			.filter((key) => process.env[key])
+			.map((key) => [key, process.env[key]]),
+	);
+	try {
+		return await chromium.launch({
+			headless: true,
+			chromiumSandbox: true,
+			env: browserEnv,
+		});
+	} catch (error) {
+		throw new FriendCheckInfrastructureError(error);
+	}
+}
 
 function isPublicAddress(address) {
 	if (net.isIP(address) === 4) {
@@ -283,24 +316,7 @@ async function validateFriendPage(pageUrl) {
 	let browser;
 	let browserContext;
 	try {
-		// 浏览器进程只得到运行所需环境，不继承 GitHub token/Action 凭据。
-		const browserEnv = Object.fromEntries(
-			[
-				"PATH",
-				"HOME",
-				"LANG",
-				"TMPDIR",
-				"XDG_CACHE_HOME",
-				"PLAYWRIGHT_BROWSERS_PATH",
-			]
-				.filter((key) => process.env[key])
-				.map((key) => [key, process.env[key]]),
-		);
-		browser = await chromium.launch({
-			headless: true,
-			chromiumSandbox: true,
-			env: browserEnv,
-		});
+		browser = await launchValidationBrowser();
 		browserContext = await browser.newContext({
 			serviceWorkers: "block",
 			acceptDownloads: false,
@@ -351,7 +367,9 @@ async function validateFriendPage(pageUrl) {
 				host,
 				{ timeout: 5000 },
 			);
-		} catch {
+		} catch (error) {
+			if (!browser.isConnected())
+				throw new FriendCheckInfrastructureError(error);
 			return {
 				ok: false,
 				reason:
@@ -359,11 +377,24 @@ async function validateFriendPage(pageUrl) {
 			};
 		}
 		return { ok: true };
+	} catch (error) {
+		if (error instanceof FriendCheckInfrastructureError) throw error;
+		if (!browser?.isConnected())
+			throw new FriendCheckInfrastructureError(error);
+		return {
+			ok: false,
+			reason: "友链页面访问超时或连接失败，请检查页面是否可公开访问。",
+		};
 	} finally {
 		try {
 			await browserContext?.close();
-		} finally {
+		} catch {
+			// 浏览器异常退出时上下文可能已关闭，不让清理错误覆盖检查结论。
+		}
+		try {
 			await browser?.close();
+		} catch {
+			// 已退出的进程无需重复关闭。
 		}
 	}
 }
@@ -472,6 +503,7 @@ module.exports = async function processFriendRequest({
 	github,
 	context,
 	core,
+	browserReady = true,
 }) {
 	const payloadIssue = context.payload.issue;
 	if (
@@ -522,9 +554,14 @@ module.exports = async function processFriendRequest({
 		per_page: 100,
 	});
 	const checks = comments.filter(
-		(item) => item.user?.type === "Bot" && item.body?.includes(CHECK_MARKER),
+		(item) =>
+			item.user?.type === "Bot" &&
+			item.body?.includes(CHECK_MARKER) &&
+			// 兼容修复前的评论，启动失败不消耗申请人的检查次数。
+			!item.body.includes("browserType.launch:") &&
+			!item.body.includes("Chromium sandboxing failed"),
 	).length;
-	if (!approving && checks >= MAX_CHECKS) {
+	if (browserReady && !approving && checks >= MAX_CHECKS) {
 		core?.notice("此申请已达到自动检查次数上限，等待站长处理。");
 		return;
 	}
@@ -537,6 +574,7 @@ module.exports = async function processFriendRequest({
 			body: `${marker}\n${text}`,
 		});
 	try {
+		if (!browserReady) throw new FriendCheckInfrastructureError();
 		await addLabels(github, owner, repo, issueNumber, ["friend-link"]);
 		const data = parseIssueBody(body);
 		if (
@@ -605,6 +643,19 @@ module.exports = async function processFriendRequest({
 			state_reason: "completed",
 		});
 	} catch (error) {
+		if (error instanceof FriendCheckInfrastructureError) {
+			const runUrl = `https://github.com/${owner}/${repo}/actions/runs/${context.runId}`;
+			await github.rest.issues.createComment({
+				owner,
+				repo,
+				issue_number: issueNumber,
+				body: `${INFRASTRUCTURE_MARKER}\n⚠️ 友链检查机器人的浏览器运行环境异常，尚未完成回链检查。这不表示你的申请信息或回链有问题，也不会消耗申请检查次数。\n\n请站长查看 [Actions 日志](${runUrl}) 并修复环境。修复后，申请人可回复 \`/recheck-friend\`，批准操作需站长再次回复 \`/approve-friend\`。本次未写入友链配置。`,
+			});
+			// 不改变原有审核标签；详细启动日志只留在 Actions，不贴到申请评论。
+			core?.error(error.cause?.stack || error.stack);
+			core?.setFailed(error.message);
+			return;
+		}
 		await addLabels(github, owner, repo, issueNumber, ["needs-update"]);
 		await removeLabelIfExists(github, owner, repo, issueNumber, "待审核");
 		const message =
@@ -618,3 +669,14 @@ module.exports = async function processFriendRequest({
 		if (approving) core?.setFailed(message);
 	}
 };
+
+// 工作流仅访问空白页预检，复用与真实友链检查一致的沙箱和环境白名单。
+module.exports.checkBrowserEnvironment =
+	async function checkBrowserEnvironment() {
+		const browser = await launchValidationBrowser();
+		try {
+			await browser.newPage();
+		} finally {
+			await browser.close();
+		}
+	};
