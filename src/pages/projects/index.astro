@@ -51,22 +51,3 @@ const countLabel = i18n(I18nKey.projectsCount);
 		)}
 	</div>
 </MainGridLayout>
-
-<script>
-	import { createProjectsController } from "@/utils/projects-controller";
-	import { definePageIsland } from "@/utils/swup-lifecycle";
-
-	let cleanup: (() => void) | undefined;
-	definePageIsland({
-		name: "github-projects",
-		match: () => !!document.querySelector("[data-projects-page]"),
-		mount: () => {
-			const root = document.querySelector<HTMLElement>("[data-projects-page]");
-			if (root) cleanup = createProjectsController(root);
-		},
-		unmount: () => {
-			cleanup?.();
-			cleanup = undefined;
-		},
-	});
-</script>

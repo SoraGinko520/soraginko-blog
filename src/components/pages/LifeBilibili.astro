@@ -1,0 +1,46 @@
+---
+import CoverImage from "@/components/common/CoverImage.astro";
+import Icon from "@/components/common/Icon.astro";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { getBilibiliFollowSnapshot } from "@/utils/bilibili-utils";
+import { buildCoverImage } from "@/utils/cover-image";
+
+const snapshot = await getBilibiliFollowSnapshot();
+const items = await Promise.all(
+	snapshot.items.map(async (item) => ({
+		...item,
+		image: await buildCoverImage({
+			image: item.cover,
+			widths: [240, 480],
+			sizes: "(max-width: 768px) 50vw, 20vw",
+		}),
+	})),
+);
+const emptyKey =
+	snapshot.state === "unavailable"
+		? I18nKey.lifeAnimeUnavailable
+		: snapshot.state === "disabled"
+			? I18nKey.lifeBilibiliDisabled
+			: snapshot.state === "unconfigured"
+				? I18nKey.lifeBilibiliEmpty
+				: I18nKey.lifeAnimeEmpty;
+---
+
+<section id="bilibili" class="life-section" aria-labelledby="life-bilibili-title" data-life-anime>
+	<header class="life-section__header"><div><span class="life-eyebrow">BILIBILI</span><h2 id="life-bilibili-title">{i18n(I18nKey.lifeBilibili)}</h2><p>{i18n(I18nKey.lifeBilibiliDescription)}</p></div></header>
+	{items.length > 0 ? <>
+		<div class="life-anime-controls" hidden data-life-anime-controls>
+			<label class="life-anime-search"><span class="sr-only">{i18n(I18nKey.lifeAnimeSearch)}</span><input type="search" placeholder={i18n(I18nKey.lifeAnimeSearch)} data-life-anime-search /></label>
+			<div class="life-book-filters" role="group" aria-label={i18n(I18nKey.lifeBilibili)}>
+				<button type="button" data-life-anime-filter="all" aria-pressed="true">{i18n(I18nKey.lifeAnimeAll)} <span>{items.length}</span></button>
+				{["anime", "drama"].map((kind) => <button type="button" data-life-anime-filter={kind} aria-pressed="false">{i18n(kind === "anime" ? I18nKey.lifeAnime : I18nKey.lifeDrama)} <span>{items.filter((item) => item.kind === kind).length}</span></button>)}
+			</div>
+		</div>
+		<div class="life-media-grid">{items.map((item) => <article class="life-anime-card" data-life-anime-kind={item.kind} data-life-anime-title={item.title}>
+			<a class="life-anime-card__cover" href={item.url} target="_blank" rel="noopener noreferrer" aria-label={item.title}>{item.image ? <CoverImage cover={item.image} alt={item.title} /> : <Icon name="simple-icons:bilibili" aria-hidden="true" />}</a>
+			<div class="life-anime-card__body"><span class="life-tag">{i18n(item.kind === "anime" ? I18nKey.lifeAnime : I18nKey.lifeDrama)}</span><h3><a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a></h3>{item.progress && <p class="life-note">{item.progress}</p>}{item.rating !== null && <p class="life-note">{i18n(I18nKey.lifeAnimeRating)} {item.rating}</p>}{item.overview && <details><summary>{i18n(I18nKey.lifeAnimeSynopsis)}</summary><p class="life-note">{item.overview}</p></details>}</div>
+		</article>)}</div>
+		<p class="life-empty" hidden data-life-anime-empty>{i18n(I18nKey.lifeAnimeNoResults)}</p>
+	</> : <p class="life-empty">{i18n(emptyKey)}</p>}
+</section>

@@ -1,0 +1,12 @@
+---
+import Icon from "@/components/common/Icon.astro";
+import { lifeConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { url } from "@/utils/url-utils";
+import "@/styles/pages/life.css";
+---
+
+<nav class="life-nav grid grid-cols-2 md:grid-cols-4" aria-label={i18n(I18nKey.lifeContents)}>
+	{lifeConfig.navigation.map((section) => <a class="life-nav__link" href={url(section.url)} aria-label={i18n(section.ariaLabel)} aria-current={Astro.url.pathname === url(section.url) ? "page" : undefined}><Icon name={section.icon} aria-hidden="true" /><span><small>{section.eyebrow}</small>{i18n(section.label)}</span><span aria-hidden="true">↗</span></a>)}
+</nav>

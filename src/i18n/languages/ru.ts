@@ -2,6 +2,48 @@ import Key from "../i18nKey";
 import type { Translation } from "../translation";
 
 export const ru: Translation = {
+	[Key.lifeAnimeNoResults]:
+		"Нет подходящих аниме или сериалов. Попробуйте другое слово или категорию.",
+	[Key.lifeAnime]: "Аниме",
+	[Key.lifeDrama]: "Сериалы",
+	[Key.lifeAnimeAll]: "Все",
+	[Key.lifeAnimeSearch]: "Поиск аниме и сериалов",
+	[Key.lifeAnimeUnavailable]:
+		"Открытый список недоступен. Проверьте настройки приватности или повторите сборку позже.",
+	[Key.lifeAnimeEmpty]: "Публичных подписок на аниме и сериалы пока нет.",
+	[Key.lifeAnimeRating]: "Рейтинг",
+	[Key.lifeAnimeSynopsis]: "Описание",
+	[Key.lifeQuickLinks]: "Разделы жизни",
+	[Key.lifeOpenQuickLinks]: "Открыть разделы жизни",
+	[Key.lifeCloseQuickLinks]: "Закрыть разделы и вернуться к обложке",
+	[Key.lifeViewBilibili]: "Посетить мой Bilibili",
+	[Key.lifeViewMoments]: "Посмотреть заметки о жизни",
+	[Key.lifeViewBooks]: "Посмотреть книжную полку",
+	[Key.lifeAlbumsDescription]: "Фотографии, пейзажи и повседневные моменты.",
+	[Key.lifeAlbumsEmpty]: "Фотографии ещё собираются.",
+	[Key.lifeViewAlbums]: "Все альбомы",
+	[Key.lifeBooks]: "Книжная полка",
+	[Key.lifeBooksDescription]: "Читаю, прочитано и планы на чтение.",
+	[Key.lifeBooksEmpty]: "Список книг ещё собирается.",
+	[Key.lifeReading]: "Читаю",
+	[Key.lifeFinished]: "Прочитано",
+	[Key.lifePlanned]: "Хочу прочитать",
+	[Key.lifeBilibili]: "Bilibili",
+	[Key.lifeBilibiliDescription]:
+		"Мои публичные подписки на аниме и сериалы Bilibili, синхронизируемые при сборке.",
+	[Key.lifeBilibiliEmpty]: "Bilibili пока не настроен.",
+	[Key.lifeBilibiliDisabled]: "Раздел Bilibili отключён.",
+	[Key.lifeProfile]: "Профиль",
+	[Key.lifeMoments]: "Заметки",
+	[Key.lifeMomentsDescription]:
+		"Мои короткие записи, отдельно от статей друзей.",
+	[Key.lifeMomentsEmpty]: "Повседневные заметки ещё собираются.",
+	[Key.lifeContents]: "Разделы жизни",
+	[Key.visitsSummary]: "{uv} посетителей · {pv} просмотров страниц",
+	[Key.visitsVisitors]: "{count} посетителей",
+	[Key.visitsViews]: "{count} просмотров страниц",
+	[Key.lifeImage]: "Фото из заметки",
+	[Key.lifeAllBooks]: "Все",
 	[Key.visitsPreview]:
 		"Подсчёт включён только на основном домене; предпросмотры исключены",
 	[Key.viewUmamiStats]: "Открыть аналитику Umami",

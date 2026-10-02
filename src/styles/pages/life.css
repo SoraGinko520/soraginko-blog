@@ -1,0 +1,55 @@
+.life-page { color: var(--deep-text); min-width: 0; }
+.life-nav { gap: var(--space-4); margin-block: var(--space-8); }
+.life-nav__link { display: flex; align-items: center; gap: var(--space-3); padding: var(--space-5); border: 1px solid var(--line-divider); border-radius: var(--radius-large); background: var(--article-surface-bg); color: var(--deep-text); min-width: 0; }
+.life-nav__link > svg { flex-shrink: 0; font-size: 1.5rem; color: var(--primary); }
+.life-nav__link > span:first-of-type { flex: 1; min-width: 0; }
+.life-nav__link small { display: block; color: var(--content-meta); font-size: 0.75rem; letter-spacing: 0.08em; }
+.life-nav__link:hover { border-color: var(--primary); }
+.life-section { border-top: 1px solid var(--line-divider); padding-block: var(--space-8); scroll-margin-top: calc(var(--control-size) + var(--space-8)); min-width: 0; }
+.life-section__header { display: flex; align-items: center; flex-wrap: wrap; justify-content: space-between; gap: var(--space-4); margin-bottom: var(--space-6); }
+.life-eyebrow { color: var(--primary); font-size: 0.75rem; letter-spacing: 0.12em; font-weight: 650; }
+.life-section h2 { margin-block: var(--space-1) var(--space-2); font-size: 1.5rem; font-weight: 700; }
+.life-section__header p, .life-note { color: var(--content-meta); line-height: 1.8; margin: 0; }
+.life-link { color: var(--primary); text-decoration: underline; text-underline-offset: 0.2em; overflow-wrap: anywhere; }
+.life-empty { color: var(--content-meta); padding: var(--space-8); text-align: center; border: 1px dashed var(--line-divider); border-radius: var(--radius-large); background: var(--article-surface-bg); }
+.life-book-stats { display: flex; gap: var(--space-6); flex-wrap: wrap; margin-block: 0 var(--space-5); }
+.life-book-stats > div { display: flex; gap: var(--space-2); }
+.life-book-stats dt { color: var(--content-meta); }
+.life-book-stats dd { margin: 0; font-variant-numeric: tabular-nums; }
+.life-book-filters { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-5); }
+.life-book-filters button { min-height: var(--control-size); padding-inline: var(--space-4); border: 1px solid var(--line-divider); border-radius: var(--radius-full); color: var(--deep-text); background: var(--article-surface-bg); cursor: pointer; }
+.life-book-filters button[aria-pressed="true"] { background: var(--btn-regular-bg-hover); border-color: var(--primary); color: var(--primary); }
+.life-bookshelf { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-5); padding: var(--space-5); border: 1px solid var(--line-divider); border-radius: var(--radius-large); background: var(--article-surface-bg); }
+.life-book { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; padding-bottom: var(--space-3); border-bottom: var(--space-1) solid var(--line-divider); }
+.life-book > div:last-child { min-width: 0; flex: 1; }
+.life-book__cover { width: 100%; aspect-ratio: 2 / 3; align-self: flex-start; display: grid; place-items: center; overflow: hidden; border-left: var(--space-2) solid var(--line-divider); border-radius: var(--radius-small); background: var(--btn-regular-bg); color: var(--primary); box-shadow: var(--surface-shadow-hover); }
+.life-book__cover img { width: 100%; height: 100%; object-fit: cover; }
+.life-book__cover picture { display: contents; }
+.life-book h3, .life-profile h3, .life-moment h3 { font-weight: 650; font-size: 1.125rem; margin-block: var(--space-2); overflow-wrap: anywhere; }
+.life-book__author { color: var(--content-meta); margin-bottom: var(--space-2); }
+.life-tag { display: inline-block; padding: var(--space-1) var(--space-2); border-radius: var(--radius-small); background: var(--btn-regular-bg-hover); color: var(--primary); font-size: 0.75rem; overflow-wrap: anywhere; }
+.life-profile { display: flex; gap: var(--space-4); align-items: center; padding: var(--space-5); border: 1px solid var(--line-divider); border-radius: var(--radius-large); background: var(--article-surface-bg); }
+.life-profile__icon { flex-shrink: 0; display: grid; place-items: center; width: calc(var(--control-size) + var(--space-4)); height: calc(var(--control-size) + var(--space-4)); border-radius: var(--radius-large); color: var(--primary); background: var(--btn-regular-bg-hover); font-size: 2rem; }
+.life-profile > div { min-width: 0; }
+.life-featured { display: grid; gap: var(--space-4); list-style: none; padding: 0; margin-top: var(--space-5); }
+.life-moments { list-style: none; display: grid; gap: var(--space-6); border-left: 1px solid var(--line-divider); padding-left: var(--space-4); }
+.life-moment { padding: var(--space-5); border: 1px solid var(--line-divider); border-radius: var(--radius-large); background: var(--article-surface-bg); }
+.life-moment time { color: var(--content-meta); font-size: 0.875rem; }
+.life-moment__content { white-space: pre-wrap; overflow-wrap: anywhere; line-height: 1.8; margin-block: var(--space-3); }
+.life-moment__images img { width: 100%; aspect-ratio: 1; object-fit: cover; border-radius: var(--radius-medium); }
+.life-tags { display: flex; flex-wrap: wrap; gap: var(--space-2); list-style: none; padding: 0; margin-top: var(--space-4); }
+.life-page [hidden] { display: none !important; }
+.life-page a:focus-visible, .life-page button:focus-visible { outline: 2px solid var(--primary); outline-offset: var(--space-1); }
+.life-anime-search input { width: 100%; min-height: var(--control-size); padding: var(--space-3) var(--space-4); border: 1px solid var(--line-divider); border-radius: var(--radius-medium); background: var(--article-surface-bg); color: var(--deep-text); margin-bottom: var(--space-4); }
+.life-anime-search input:focus-visible { outline: 2px solid var(--primary); outline-offset: var(--space-1); }
+.life-media-grid { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: var(--space-4); }
+.life-anime-card { min-width: 0; overflow: hidden; border: 1px solid var(--line-divider); border-radius: var(--radius-large); background: var(--article-surface-bg); }
+.life-anime-card__cover { display: grid; place-items: center; width: 100%; aspect-ratio: 2 / 3; background: var(--btn-regular-bg); color: var(--primary); font-size: 2rem; }
+.life-anime-card__cover img { width: 100%; height: 100%; object-fit: cover; }
+.life-anime-card__cover picture { display: contents; }
+.life-anime-card__body { padding: var(--space-4); overflow-wrap: anywhere; }
+.life-anime-card h3 { font-weight: 650; margin-block: var(--space-2); }
+.life-anime-card h3 a { color: var(--deep-text); }
+.life-anime-card summary { color: var(--primary); cursor: pointer; margin-top: var(--space-3); }
+@media (max-width: 1024px) { .life-bookshelf { grid-template-columns: repeat(3, minmax(0, 1fr)); } .life-media-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+@media (max-width: 640px) { .life-bookshelf, .life-media-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } .life-bookshelf { gap: var(--space-4); padding: var(--space-4); } }

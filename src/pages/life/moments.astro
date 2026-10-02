@@ -1,0 +1,57 @@
+---
+import dayjs from "dayjs";
+import CoverImage from "@/components/common/CoverImage.astro";
+import PageTitle from "@/components/common/PageTitle.astro";
+import LifeNavigation from "@/components/pages/LifeNavigation.astro";
+import { lifeConfig, siteConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import { buildCoverImage } from "@/utils/cover-image";
+import { formatDateI18n } from "@/utils/date-utils";
+import "@/styles/pages/life.css";
+
+if (!siteConfig.pages.life) return Astro.redirect("/404/");
+const title = i18n(I18nKey.lifeMoments);
+const description = i18n(I18nKey.lifeMomentsDescription);
+const moments = await Promise.all(
+	lifeConfig.moments
+		.filter(
+			(moment) =>
+				!moment.draft &&
+				dayjs(moment.date).isValid() &&
+				(!import.meta.env.PROD ||
+					dayjs(moment.date).valueOf() <= dayjs().valueOf()),
+		)
+		.sort((a, b) => dayjs(b.date).valueOf() - dayjs(a.date).valueOf())
+		.map(async (moment) => ({
+			...moment,
+			dateTime: dayjs(moment.date).toISOString(),
+			images: (
+				await Promise.all(
+					(moment.images || []).map((image) =>
+						buildCoverImage({
+							image,
+							widths: [320, 640],
+							sizes: "(min-width: 768px) 33vw, 100vw",
+						}),
+					),
+				)
+			).filter((image) => image !== null),
+		})),
+);
+---
+
+<MainGridLayout title={title} description={description} hasOwnH1={true}>
+	<div class="life-page card-base z-10 px-4 sm:px-6 lg:px-9 py-6 relative w-full">
+		<PageTitle title={title} eyebrow="MOMENTS" description={description} variant="stacked" />
+		<LifeNavigation />
+		<section id="moments" class="life-section" aria-label={title}>
+			{moments.length > 0 ? <ol class="life-moments">{moments.map((moment) => <li><article class="life-moment">
+				<time datetime={moment.dateTime}>{formatDateI18n(moment.dateTime)}</time>{moment.title && <h3>{moment.title}</h3>}<p class="life-moment__content">{moment.content}</p>
+				{moment.images.length > 0 && <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 life-moment__images">{moment.images.map((cover) => <CoverImage cover={cover} alt={moment.title || i18n(I18nKey.lifeImage)} />)}</div>}
+				{moment.tags && moment.tags.length > 0 && <ul class="life-tags">{moment.tags.map((tag) => <li class="life-tag">{tag}</li>)}</ul>}
+			</article></li>)}</ol> : <p class="life-empty">{i18n(I18nKey.lifeMomentsEmpty)}</p>}
+		</section>
+	</div>
+</MainGridLayout>

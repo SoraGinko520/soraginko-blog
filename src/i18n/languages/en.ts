@@ -2,6 +2,48 @@ import Key from "../i18nKey";
 import type { Translation } from "../translation";
 
 export const en: Translation = {
+	[Key.lifeAnimeNoResults]:
+		"No matching anime or drama. Try another keyword or category.",
+	[Key.lifeAnime]: "Anime",
+	[Key.lifeDrama]: "Drama",
+	[Key.lifeAnimeAll]: "All",
+	[Key.lifeAnimeSearch]: "Search anime or drama",
+	[Key.lifeAnimeUnavailable]:
+		"Public follow list is unavailable. Check privacy settings or rebuild later.",
+	[Key.lifeAnimeEmpty]: "No public anime or drama follows yet.",
+	[Key.lifeAnimeRating]: "Rating",
+	[Key.lifeAnimeSynopsis]: "Synopsis",
+	[Key.lifeQuickLinks]: "Life shortcuts",
+	[Key.lifeOpenQuickLinks]: "Open life shortcuts",
+	[Key.lifeCloseQuickLinks]: "Close life shortcuts and return to the cover",
+	[Key.lifeViewBilibili]: "Visit my Bilibili",
+	[Key.lifeViewMoments]: "View everyday moments",
+	[Key.lifeViewBooks]: "View bookshelf",
+	[Key.lifeAlbumsDescription]: "Photos, scenery and everyday fragments.",
+	[Key.lifeAlbumsEmpty]: "Photos are still being collected.",
+	[Key.lifeViewAlbums]: "View all albums",
+	[Key.lifeBooks]: "Bookshelf",
+	[Key.lifeBooksDescription]: "Reading, finished, and books for later.",
+	[Key.lifeBooksEmpty]: "The reading list is still being collected.",
+	[Key.lifeReading]: "Reading",
+	[Key.lifeFinished]: "Finished",
+	[Key.lifePlanned]: "Want to read",
+	[Key.lifeBilibili]: "Bilibili",
+	[Key.lifeBilibiliDescription]:
+		"My public anime and drama follows, synced from Bilibili at build time.",
+	[Key.lifeBilibiliEmpty]: "Bilibili information is not configured yet.",
+	[Key.lifeBilibiliDisabled]: "The Bilibili section is disabled.",
+	[Key.lifeProfile]: "Profile",
+	[Key.lifeMoments]: "Moments",
+	[Key.lifeMomentsDescription]:
+		"My short notes, separate from friends’ articles.",
+	[Key.lifeMomentsEmpty]: "Everyday notes are still being collected.",
+	[Key.lifeContents]: "Life sections",
+	[Key.visitsSummary]: "{uv} visitors have stopped by · {pv} page views",
+	[Key.visitsVisitors]: "{count} visitors have stopped by",
+	[Key.visitsViews]: "{count} page views",
+	[Key.lifeImage]: "Photo from an everyday note",
+	[Key.lifeAllBooks]: "All",
 	[Key.visitsPreview]:
 		"Counting is enabled only on the production domain; previews are excluded",
 	[Key.viewUmamiStats]: "View Umami analytics",

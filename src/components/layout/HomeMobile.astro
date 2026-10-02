@@ -3,6 +3,7 @@ import { Picture } from "astro:assets";
 import * as path from "node:path";
 import Icon from "@components/common/Icon.astro";
 import type { ImageMetadata } from "astro";
+import HomeLifeNavigation from "@/components/layout/HomeLifeNavigation.astro";
 import { homeConfig, siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
@@ -19,7 +20,7 @@ import {
 import { getGuidePostSets } from "@/utils/home-guide-grid.js";
 import { getFallbackFormat, getImageFormats } from "@/utils/image-utils";
 import { getUmamiShareUrl } from "@/utils/umami-pageviews";
-import { getPostUrlBySlug } from "@/utils/url-utils";
+import { getPostUrlBySlug, getTagUrl } from "@/utils/url-utils";
 
 const posts = await getSortedPosts();
 const categories = await getCategoryList();
@@ -267,6 +268,14 @@ const statsShareUrl = getUmamiShareUrl(umamiConfig?.shareId);
 		) : (
 			<p class="home-mobile-empty">{i18n(I18nKey.noPosts)}</p>
 		)}
+		<section class="guide-card guide-card--index guide-card--tags" aria-labelledby="mobile-tags-title">
+			<p class="guide-card__eyebrow">TAGS</p><h3 id="mobile-tags-title">{i18n(I18nKey.tagIndex)}</h3>
+			<div class="guide-tag-list">
+				{tags.slice(0, 5).map((tag) => <a href={getTagUrl(tag.name)}>#{tag.name}<span>{tag.count}</span></a>)}
+				<a class="guide-tag-list__all" href={getTagUrl("")}>{i18n(I18nKey.browseAllTags)} <Icon name="material-symbols:arrow-outward-rounded" aria-hidden="true" /></a>
+			</div>
+		</section>
+		{siteConfig.pages.life && <section class="guide-card guide-card--life"><HomeLifeNavigation /></section>}
 	</section>
 </div>
 

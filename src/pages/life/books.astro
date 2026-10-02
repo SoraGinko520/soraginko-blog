@@ -1,0 +1,53 @@
+---
+import CoverImage from "@/components/common/CoverImage.astro";
+import Icon from "@/components/common/Icon.astro";
+import PageTitle from "@/components/common/PageTitle.astro";
+import LifeNavigation from "@/components/pages/LifeNavigation.astro";
+import { lifeConfig, siteConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import type { BookStatus } from "@/types/config";
+import { buildCoverImage } from "@/utils/cover-image";
+import "@/styles/pages/life.css";
+
+if (!siteConfig.pages.life) return Astro.redirect("/404/");
+const title = i18n(I18nKey.lifeBooks);
+const description = i18n(I18nKey.lifeBooksDescription);
+const bookLabels: Record<BookStatus, string> = {
+	reading: i18n(I18nKey.lifeReading),
+	finished: i18n(I18nKey.lifeFinished),
+	planned: i18n(I18nKey.lifePlanned),
+};
+const books = await Promise.all(
+	lifeConfig.books.map(async (book) => ({
+		...book,
+		image: await buildCoverImage({
+			image: book.cover || "",
+			widths: [160, 320],
+			sizes: "160px",
+		}),
+	})),
+);
+---
+
+<MainGridLayout title={title} description={description} hasOwnH1={true}>
+	<div class="life-page card-base z-10 px-4 sm:px-6 lg:px-9 py-6 relative w-full" data-life-page>
+		<PageTitle title={title} eyebrow="BOOKSHELF" description={description} variant="stacked" />
+		<LifeNavigation />
+		<section id="books" class="life-section" aria-label={title}>
+			<dl class="life-book-stats">{Object.entries(bookLabels).map(([status, label]) => <div><dt>{label}</dt><dd>{books.filter((book) => book.status === status).length}</dd></div>)}</dl>
+			{books.length > 0 ? <>
+				<div class="life-book-filters" role="group" aria-label={title} data-life-book-filters hidden>
+					<button type="button" data-life-book-filter="all" aria-pressed="true">{i18n(I18nKey.lifeAllBooks)}</button>
+					{Object.entries(bookLabels).map(([status, label]) => <button type="button" data-life-book-filter={status} aria-pressed="false">{label}</button>)}
+				</div>
+				<div class="life-bookshelf">{books.map((book) => <article class="life-book" data-life-book-status={book.status}>
+					<div class="life-book__cover">{book.image ? <CoverImage cover={book.image} alt={book.title} /> : <Icon name="material-symbols:menu-book-outline" aria-hidden="true" />}</div>
+					<div><span class="life-tag">{bookLabels[book.status]}</span><h3>{book.title}</h3><p class="life-book__author">{book.author}</p>{book.note && <p class="life-note">{book.note}</p>}</div>
+				</article>)}</div>
+				<p class="life-empty" data-life-books-empty hidden>{i18n(I18nKey.lifeBooksEmpty)}</p>
+			</> : <p class="life-empty">{i18n(I18nKey.lifeBooksEmpty)}</p>}
+		</section>
+	</div>
+</MainGridLayout>

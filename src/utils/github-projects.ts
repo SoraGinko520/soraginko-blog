@@ -7,6 +7,7 @@ import I18nKey from "@/i18n/i18nKey";
 import type {
 	GithubProjectsCache,
 	GithubRepository,
+	PendingFeaturedProject,
 	Project,
 	ProjectStatus,
 	ProjectsSnapshot,
@@ -291,6 +292,37 @@ export function getFeaturedProjects(projects: Project[]): Project[] {
 	return projects
 		.filter((project) => project.featured)
 		.slice(0, maximumFeatured);
+}
+
+/** API 降级且旧缓存缺少精选仓库时，保留配置入口，不把它伪装成已同步项目。 */
+export function getPendingFeaturedProjects(
+	snapshot: ProjectsSnapshot,
+): PendingFeaturedProject[] {
+	if (snapshot.source === "live") return [];
+	return projectsConfig.featured
+		.filter(
+			(name) =>
+				/^[A-Za-z0-9_.-]+$/.test(name) &&
+				!containsName(projectsConfig.hidden, name) &&
+				!snapshot.projects.some(
+					(project) => project.name.toLowerCase() === name.toLowerCase(),
+				),
+		)
+		.flatMap((name): PendingFeaturedProject[] => {
+			const override = Object.entries(projectsConfig.overrides).find(
+				([key]) => key.toLowerCase() === name.toLowerCase(),
+			)?.[1];
+			return override?.hidden
+				? []
+				: [
+						{
+							title: plainText(override?.title) || name,
+							description: plainText(override?.description),
+							githubUrl: `https://github.com/${githubOwner}/${name}`,
+						},
+					];
+		})
+		.slice(0, maximumFeatured - getFeaturedProjects(snapshot.projects).length);
 }
 
 export function getProjectStatusKey(status: ProjectStatus): I18nKey {

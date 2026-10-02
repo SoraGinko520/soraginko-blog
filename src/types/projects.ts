@@ -82,6 +82,13 @@ export interface ProjectsSnapshot {
 	fetchedAt: string | null;
 }
 
+/** 仅配置的公开入口；未同步时不补造 Star / Fork / 日期或详情页。 */
+export interface PendingFeaturedProject {
+	title: string;
+	description: string;
+	githubUrl: string;
+}
+
 export interface ProjectCardProps {
 	project: Project;
 	headingLevel?: "h2" | "h3";

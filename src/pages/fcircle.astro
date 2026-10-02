@@ -105,16 +105,3 @@ const statLabels = [
 		)}
 	</section>
 </MainGridLayout>
-
-<script>
-	import { initFcirclePage } from "@/utils/fcircle-controller";
-	import { definePageIsland } from "@/utils/swup-lifecycle";
-
-	let cleanupFcircle: (() => void) | null = null;
-	definePageIsland({
-		name: "fcircle:view",
-		match: () => Boolean(document.querySelector("[data-fcircle]")),
-		mount: () => { cleanupFcircle = initFcirclePage(); },
-		unmount: () => { cleanupFcircle?.(); cleanupFcircle = null; },
-	});
-</script>

@@ -337,7 +337,37 @@ const siteLang = lang.replace("_", "-");
 <script>
 	import { initLayout } from "@/utils/layout-init";
 	import { initBusuanzi } from "@/utils/busuanzi-controller";
+	import { initLifePage } from "@/utils/life-controller";
+	import { initFcirclePage } from "@/utils/fcircle-controller";
+	import { createProjectsController } from "@/utils/projects-controller";
+	import { definePageIsland } from "@/utils/swup-lifecycle";
 
 	initLayout();
 	initBusuanzi();
+	// Astro 将页面模块提升到 head；首次经 Swup 进入页面时它不一定被注入。
+	// 在共有外壳只登记一次，实际挂载与卸载仍交给现有页面孤岛生命周期。
+	let lifeCleanup: (() => void) | undefined;
+	definePageIsland({
+		name: "life:content",
+		match: () => Boolean(document.querySelector("[data-life-page]")),
+		mount: () => { lifeCleanup = initLifePage(); },
+		unmount: () => { lifeCleanup?.(); lifeCleanup = undefined; },
+	});
+	let projectsCleanup: (() => void) | undefined;
+	definePageIsland({
+		name: "github-projects",
+		match: () => Boolean(document.querySelector("[data-projects-page]")),
+		mount: () => {
+			const root = document.querySelector<HTMLElement>("[data-projects-page]");
+			if (root) projectsCleanup = createProjectsController(root);
+		},
+		unmount: () => { projectsCleanup?.(); projectsCleanup = undefined; },
+	});
+	let fcircleCleanup: (() => void) | undefined;
+	definePageIsland({
+		name: "fcircle:view",
+		match: () => Boolean(document.querySelector("[data-fcircle]")),
+		mount: () => { fcircleCleanup = initFcirclePage(); },
+		unmount: () => { fcircleCleanup?.(); fcircleCleanup = undefined; },
+	});
 </script>

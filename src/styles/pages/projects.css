@@ -231,7 +231,17 @@
 }
 
 .home-featured-projects {
-	padding: var(--space-8) var(--space-4);
+	position: relative;
+	width: 100vw;
+	margin-inline: calc(50% - 50vw);
+	padding: var(--space-8) clamp(1rem, 4vw, 4.5rem);
+	box-sizing: border-box;
+	overflow: clip;
+}
+
+.home-featured-projects__inner {
+	width: min(100%, 92rem);
+	margin-inline: auto;
 }
 
 .home-featured-projects__header {

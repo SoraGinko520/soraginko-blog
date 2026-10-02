@@ -1,5 +1,6 @@
 ---
 import PageTitle from "@/components/common/PageTitle.astro";
+import LifeBilibili from "@/components/pages/LifeBilibili.astro";
 import LifeNavigation from "@/components/pages/LifeNavigation.astro";
 import { siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
@@ -7,16 +8,15 @@ import { i18n } from "@/i18n/translation";
 import MainGridLayout from "@/layouts/MainGridLayout.astro";
 import "@/styles/pages/life.css";
 
-if (!siteConfig.pages.life) {
-	return Astro.redirect("/404/");
-}
-const title = i18n(I18nKey.life);
-const description = i18n(I18nKey.lifeDescription);
+if (!siteConfig.pages.life) return Astro.redirect("/404/");
+const title = i18n(I18nKey.lifeBilibili);
+const description = i18n(I18nKey.lifeBilibiliDescription);
 ---
 
 <MainGridLayout title={title} description={description} hasOwnH1={true}>
-	<div class="life-page card-base z-10 px-4 sm:px-6 lg:px-9 py-6 relative w-full">
-		<PageTitle title={title} eyebrow="LIFE" description={description} variant="stacked" />
+	<div class="life-page card-base z-10 px-4 sm:px-6 lg:px-9 py-6 relative w-full" data-life-page>
+		<PageTitle title={title} eyebrow="BILIBILI" description={description} variant="stacked" />
 		<LifeNavigation />
+		<LifeBilibili />
 	</div>
 </MainGridLayout>

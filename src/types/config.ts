@@ -1,3 +1,4 @@
+import type I18nKey from "@/i18n/i18nKey";
 import type {
 	DARK_MODE,
 	LIGHT_MODE,
@@ -642,6 +643,8 @@ export type FooterConfig = {
 	socialLinks: FooterSocialLink[]; // 社交链接
 	beian: FooterBeianConfig; // 备案信息
 	poweredBy: FooterPoweredByItem[]; // Powered by 信息
+	/** 萌 ICP 趣味备案，独立于官方 ICP / 公安备案。 */
+	moeIcp: { enabled: boolean; text: string; url: string };
 };
 
 export type CoverImageConfig = {
@@ -769,6 +772,47 @@ export type Live2DModelConfig = {
 };
 
 // 友链配置
+export type BookStatus = "reading" | "finished" | "planned";
+
+export interface LifeBook {
+	id: string;
+	title: string;
+	author: string;
+	cover?: string;
+	status: BookStatus;
+	note?: string;
+}
+
+export interface LifeMoment {
+	id: string;
+	/** 带时区的 ISO 时间或 YYYY-MM-DD；不填时不发布。 */
+	date: string;
+	title?: string;
+	/** 纯文本，支持换行；不执行 HTML。 */
+	content: string;
+	images?: string[];
+	tags?: string[];
+	draft?: boolean;
+}
+
+export interface LifeConfig {
+	navigation: {
+		id: "albums" | "bilibili" | "moments" | "books";
+		label: I18nKey;
+		ariaLabel: I18nKey;
+		eyebrow: string;
+		url: string;
+		icon: string;
+		position: "top-left" | "top-right" | "bottom-left" | "bottom-right";
+	}[];
+	books: LifeBook[];
+	bilibili: {
+		enabled: boolean;
+		uid: string;
+	};
+	moments: LifeMoment[];
+}
+
 export type FriendLink = {
 	title: string; // 友链标题
 	imgurl: string; // 头像图片URL

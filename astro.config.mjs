@@ -223,7 +223,7 @@ export default defineConfig({
 				if (pathname === "/archive/" && !siteConfig.pages.archive) {
 					return false;
 				}
-				if (pathname === "/life/" && !siteConfig.pages.life) {
+				if (pathname.startsWith("/life/") && !siteConfig.pages.life) {
 					return false;
 				}
 				if (pathname === "/about/" && !siteConfig.pages.about) {

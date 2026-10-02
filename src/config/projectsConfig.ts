@@ -7,8 +7,18 @@ import type { ProjectsConfig } from "@/types/projects";
  * overrides.order 数值越大越靠前；兼容原有 sort，不重复维护仓库元数据。
  */
 export const projectsConfig: ProjectsConfig = {
-	featured: [],
+	featured: ["soraginko-blog"],
 	hidden: [],
 	includeForks: [],
-	overrides: {},
+	overrides: {
+		"soraginko-blog": {
+			title: "SoraGinko Blog",
+			description:
+				"记录技术、学习与生活的个人博客，也是我持续折腾 Astro、前端交互和个人站点设计的项目。",
+			status: "developing",
+			tags: ["Astro", "TypeScript", "Svelte"],
+			demo: "https://soraginko.moe",
+			order: 100,
+		},
+	},
 };

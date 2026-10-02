@@ -144,7 +144,7 @@ export function initBusuanzi(): void {
 						if (request !== currentRequest || currentRequest.signal.aborted)
 							return;
 						if (detail) {
-							detail.textContent = `UV ${uv} · PV ${pv} · ${source}`;
+							detail.textContent = `${i18n(I18nKey.visitsSummary).replace("{uv}", uv).replace("{pv}", pv)} · ${source}`;
 							detail.setAttribute("aria-busy", "false");
 						}
 						visitCard
@@ -156,7 +156,7 @@ export function initBusuanzi(): void {
 						mobileButtons.forEach((button) => {
 							const value = button.dataset.statKey === "uv" ? uv : pv;
 							button.dataset.popupValue = value;
-							button.dataset.popupDetail = source;
+							button.dataset.popupDetail = `${i18n(button.dataset.statKey === "uv" ? I18nKey.visitsVisitors : I18nKey.visitsViews).replace("{count}", value)} · ${source}`;
 							button.title = source;
 							button.setAttribute("aria-busy", "false");
 							const node =

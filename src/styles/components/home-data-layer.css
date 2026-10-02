@@ -1,4 +1,14 @@
 /* 首页站点导览卡片 */
+.home-mobile {
+	--guide-gap: var(--space-4);
+	--guide-radius: var(--radius-large);
+	--guide-border: var(--line-divider);
+	--guide-bg: var(--article-surface-bg);
+	--guide-fg: var(--deep-text);
+	--guide-muted: var(--content-meta);
+	--guide-accent: var(--primary);
+}
+
 .home-data-layer {
 	--guide-gap: clamp(0.7rem, 1.2vw, 1.1rem);
 	--guide-radius: var(--radius-large);
@@ -117,7 +127,7 @@
 
 .home-guide-grid {
 	display: grid;
-grid-template-columns: repeat(6, minmax(0, 1fr));
+	grid-template-columns: repeat(6, minmax(0, 1fr));
 	/* 行高只作为最小值：标签/分类卡片内容随视口比例压缩时允许撑高，
 	   避免第二排标签胶囊被 overflow: hidden 裁掉 */
 	grid-template-rows: repeat(2, minmax(var(--guide-row-height), auto));
@@ -385,8 +395,9 @@ grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .guide-card--categories,
-.guide-card--tags {
-	grid-column: span 3;
+.guide-card--tags,
+.guide-card--life {
+	grid-column: span 2;
 }
 
 .guide-card--article h3 {
@@ -656,9 +667,8 @@ grid-template-columns: repeat(6, minmax(0, 1fr));
 	padding-bottom: 1rem;
 }
 
-/* 标签胶囊的散落姿态带向下的位移与旋转，会超出布局盒被裁切，底部多留余量 */
 .guide-card--tags {
-	padding-bottom: 3rem;
+	padding-bottom: var(--space-4);
 }
 
 .guide-link-list {
@@ -716,7 +726,7 @@ grid-template-columns: repeat(6, minmax(0, 1fr));
 	gap: 0.3rem;
 	min-height: 3.1rem;
 	padding: 0.45rem 0.35rem;
-	border: 2px solid var(--guide-fg);
+	border: 1px solid var(--guide-border);
 	border-radius: 0.8rem;
 	background: var(--guide-bg);
 	color: inherit;
@@ -724,14 +734,16 @@ grid-template-columns: repeat(6, minmax(0, 1fr));
 	font-weight: 800;
 	line-height: 1.2;
 	text-decoration: none;
-	box-shadow: 0 0.4rem 0.9rem color-mix(in srgb, var(--guide-fg) 16%, transparent);
-	transition: background-color 280ms ease, color 280ms ease, border-color 280ms ease;
+	min-width: 0;
+	overflow-wrap: anywhere;
+	text-align: center;
+	transition: background-color 200ms ease, border-color 200ms ease, transform 200ms ease;
 }
 
 .guide-tag-list a:hover {
-	border-color: var(--guide-fg);
-	background: var(--guide-fg);
-	color: var(--guide-bg);
+	border-color: var(--guide-accent);
+	background: var(--btn-regular-bg-hover);
+	transform: translateY(-1px);
 }
 
 /* 计数徽章 */
@@ -811,9 +823,137 @@ grid-template-columns: repeat(6, minmax(0, 1fr));
 }
 
 .guide-tag-list a:focus-visible {
-	border-color: var(--guide-fg);
-	background: var(--guide-fg);
-	color: var(--guide-bg);
+	border-color: var(--guide-accent);
+	background: var(--btn-regular-bg-hover);
+}
+
+/* 默认显示生活封面，只有主动打开原生 details 后才展示五宫格。 */
+.guide-card--life { padding: 0; min-height: 16rem; }
+.guide-card--life:hover,
+.guide-card--life:focus-within { transform: none; box-shadow: none; }
+.guide-life-panel { position: relative; flex: 1; min-height: 16rem; }
+.guide-life-cover {
+	position: absolute;
+	inset: 0;
+	z-index: 2;
+	display: flex;
+	flex-direction: column;
+	justify-content: space-between;
+	padding: clamp(1rem, 1.7vw, 1.45rem);
+	color: var(--guide-fg);
+	cursor: pointer;
+	list-style: none;
+}
+.guide-life-cover::-webkit-details-marker { display: none; }
+.guide-life-cover::marker { content: ""; }
+.guide-life-cover__visual { position: absolute; inset: 0; z-index: -1; pointer-events: none; }
+.guide-life-cover__image { width: 100%; height: 100%; object-fit: cover; object-position: center 42%; opacity: var(--sky-art-visits-opacity); filter: var(--sky-art-visits-filter); }
+.guide-life-cover__visual::after {
+	content: "";
+	position: absolute;
+	inset: 0;
+	background: linear-gradient(90deg, color-mix(in srgb, var(--guide-bg) 65%, transparent), transparent 72%);
+}
+.guide-life-cover__heading { display: flex; flex-direction: column; align-items: flex-start; gap: var(--space-2); }
+.guide-life-cover__title { font-size: clamp(1.25rem, 2vw, 2rem); line-height: 1.05; font-weight: 750; }
+.guide-life-cover__hint { color: var(--guide-muted); font-size: 0.75rem; }
+.guide-life-cover__icons { display: flex; gap: var(--space-3); justify-content: flex-end; font-size: 1.35rem; }
+.guide-life-cover__close { display: none; }
+.guide-life-cover:hover { background: color-mix(in srgb, var(--btn-regular-bg-hover) 20%, transparent); }
+.guide-life-cover:focus-visible { outline: 2px solid var(--guide-accent); outline-offset: -4px; }
+.guide-life-panel[open] > .guide-life-cover {
+	inset: var(--space-2) var(--space-2) auto auto;
+	align-items: center;
+	justify-content: center;
+	width: var(--control-size);
+	height: var(--control-size);
+	padding: 0;
+	border-radius: var(--radius-small);
+}
+.guide-life-panel[open] .guide-life-cover__visual,
+.guide-life-panel[open] .guide-life-cover__heading,
+.guide-life-panel[open] .guide-life-cover__icons { display: none; }
+.guide-life-panel[open] .guide-life-cover__close { display: flex; font-size: 1.25rem; }
+.guide-life-panel:not([open]) > .guide-life { display: none; }
+.guide-life {
+	position: relative;
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	grid-template-rows: repeat(2, minmax(0, 1fr));
+	flex: 1;
+	min-height: 16rem;
+	isolation: isolate;
+}
+.guide-life__cell,
+.guide-life__center {
+	position: relative;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	min-width: 0;
+	color: var(--guide-fg);
+	background: var(--guide-bg);
+	text-decoration: none;
+	transition: background-color 200ms ease, border-color 200ms ease;
+}
+.guide-life__cell:nth-child(-n + 2) { border-bottom: 1px solid var(--guide-border); }
+.guide-life__cell:nth-child(odd) { border-right: 1px solid var(--guide-border); }
+.guide-life__content {
+	position: absolute;
+	left: 44%;
+	top: 44%;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-1);
+	width: 50%;
+	text-align: center;
+	overflow-wrap: anywhere;
+	transform: translate(-50%, -50%);
+}
+.guide-life__cell--top-right .guide-life__content,
+.guide-life__cell--bottom-right .guide-life__content { left: 56%; }
+.guide-life__cell--bottom-left .guide-life__content,
+.guide-life__cell--bottom-right .guide-life__content { top: 56%; }
+.guide-life__cell--top-left { grid-area: 1 / 1; }
+.guide-life__cell--top-right { grid-area: 1 / 2; }
+.guide-life__cell--bottom-left { grid-area: 2 / 1; }
+.guide-life__cell--bottom-right { grid-area: 2 / 2; }
+.guide-life__center {
+	position: absolute;
+	z-index: 1;
+	left: 50%;
+	top: 50%;
+	width: 30%;
+	max-width: 9rem;
+	aspect-ratio: 1;
+	flex-direction: column;
+	gap: var(--space-1);
+	border: 1px solid var(--guide-border);
+	transform: translate(-50%, -50%);
+}
+.guide-life :is(svg) { font-size: 1.65rem; transition: transform 200ms ease; }
+.guide-life :is(span, small) { line-height: 1.35; }
+.guide-life__content > span,
+.guide-life__center > span { font-size: 0.875rem; font-weight: 650; }
+.guide-life small { color: var(--guide-muted); font-size: 0.65rem; }
+.guide-life a:hover { background: var(--btn-regular-bg-hover); }
+.guide-life a:hover svg { transform: scale(1.04); }
+.guide-life a:focus-visible {
+	outline: 2px solid var(--guide-accent);
+	outline-offset: -4px;
+	background: var(--btn-regular-bg-hover);
+}
+.home-mobile-content > .guide-card { margin-top: var(--space-6); }
+
+@media (min-width: 769px) and (max-width: 1100px) {
+	.home-guide-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+	.guide-card--pinned { grid-column: span 2; }
+	.guide-card--latest,
+	.guide-card--categories,
+	.guide-card--tags,
+	.guide-card--life { grid-column: span 1; }
+	.guide-tag-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 }
 
 @keyframes guide-slide-in {
@@ -840,6 +980,7 @@ grid-template-columns: repeat(6, minmax(0, 1fr));
 	.guide-card {
 		padding: 1rem;
 	}
+	.guide-card--life { padding: 0; }
 }
 
 @media (max-width: 768px) {
@@ -868,9 +1009,12 @@ grid-template-columns: repeat(6, minmax(0, 1fr));
 	.guide-card--pinned,
 	.guide-card--latest,
 	.guide-card--categories,
-	.guide-card--tags {
+	.guide-card--tags,
+	.guide-card--life {
 		grid-column: auto;
 	}
+	.guide-card--life { padding: 0; }
+	.guide-tag-list { grid-template-columns: repeat(2, minmax(0, 1fr)); }
 
 	.guide-card--pinned,
 	.guide-card--latest {
@@ -895,8 +1039,13 @@ grid-template-columns: repeat(6, minmax(0, 1fr));
 	.guide-card::after,
 	.guide-card__bg-item,
 	.guide-rotator__slide,
-	.guide-rotator__dots button {
+	.guide-rotator__dots button,
+	.guide-tag-list a,
+	.guide-life a,
+	.guide-life svg {
 		animation: none !important;
 		transition: none !important;
 	}
+	.guide-tag-list a:hover,
+	.guide-life a:hover svg { transform: none; }
 }

@@ -6,17 +6,19 @@ import { i18n } from "@/i18n/translation";
 import {
 	getFeaturedProjects,
 	getGithubProjects,
+	getPendingFeaturedProjects,
 } from "@/utils/github-projects";
 import { url } from "@/utils/url-utils";
 import "@/styles/pages/projects.css";
 
-const projects = siteConfig.pages.projects
-	? getFeaturedProjects((await getGithubProjects()).projects)
-	: [];
+const snapshot = siteConfig.pages.projects ? await getGithubProjects() : null;
+const projects = snapshot ? getFeaturedProjects(snapshot.projects) : [];
+const pending = snapshot ? getPendingFeaturedProjects(snapshot) : [];
 ---
 
-{projects.length > 0 && (
+{projects.length + pending.length > 0 && (
 	<section class="home-featured-projects" aria-labelledby="featured-projects-title">
+		<div class="home-featured-projects__inner">
 		<header class="home-featured-projects__header">
 			<div>
 				<span class="projects-eyebrow">PROJECTS</span>
@@ -24,8 +26,10 @@ const projects = siteConfig.pages.projects
 			</div>
 			<a class="project-link" href={url("/projects/")}>{i18n(I18nKey.projectsViewAll)}<span aria-hidden="true"> →</span></a>
 		</header>
-		<div class="projects-grid grid grid-cols-1 md:grid-cols-2">
+		<div class:list={["projects-grid grid grid-cols-1", { "md:grid-cols-2": projects.length + pending.length > 1 }]}>
 			{projects.map((project) => <ProjectCard project={project} headingLevel="h3" />)}
+			{pending.map((project) => <article class="project-card"><div class="project-card__body"><h3 class="project-card__title">{project.title}</h3><p>{project.description}</p><p class="projects-notice">{i18n(I18nKey.projectsUnavailable)}</p><div class="project-card__links"><a class="project-link" href={project.githubUrl} target="_blank" rel="noopener noreferrer">{i18n(I18nKey.projectsGitHub)} ↗</a></div></div></article>)}
+		</div>
 		</div>
 	</section>
 )}

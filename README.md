@@ -32,8 +32,8 @@
 | [MmzMing/my-blog](https://github.com/MmzMing/my-blog) | 当前博客的直接源码基础，即 Firefly-Mod。在其独立副本上继续整理站点身份、内容、导航、功能开关、评论配置与视觉样式；现有页面结构、交互与工程机制来自该基础及其上游。 |
 | [CuteLeaf/Firefly](https://github.com/CuteLeaf/Firefly) | `my-blog` 的上游主题基础，也是博客架构、配置机制、内容组织和组件设计的重要学习参考。 |
 | [kihana2077/KihanaPage](https://github.com/kihana2077/KihanaPage) | 学习与设计参考，主要涉及标签组织和学习日志展示。当前版本未移植其 MkDocs 工程，也不将参考构想描述为已实现功能。 |
-| [tianshihao2003/dumplingandcakeblog](https://github.com/tianshihao2003/dumplingandcakeblog) | 学习与设计参考，主要涉及生活栏目与内容组织。当前版本未直接合并其相册、足迹、账单等生活功能。 |
-| [LengxiQwQ/lengxiqwq-site](https://github.com/LengxiQwQ/lengxiqwq-site) | 学习与功能设计参考，主要参考其“社交”导航分组、友链朋友圈的 Feed 聚合与时间线 / 平铺交互，以及项目 / 作品模块的信息架构。本博客在现有 Firefly-Mod 基础上按 SoraGinko 的数据、视觉与工程结构重新适配实现；不代表该项目作者为本站背书，也不将参考项目的作者内容、项目数据或视觉素材宣称为本站原创。 |
+| [tianshihao2003/dumplingandcakeblog](https://github.com/tianshihao2003/dumplingandcakeblog) | 相册、书架与生活内容组织的参考；封面卡片、书架状态与记录结构适配本站现有 Gallery 和 Life 配置。未复制作者照片、书单、记录或品牌样式，未合并足迹、账单。 |
+| [LengxiQwQ/lengxiqwq-site](https://github.com/LengxiQwQ/lengxiqwq-site) | 学习与功能设计参考，主要参考其“社交”导航分组、友链朋友圈的 Feed 聚合与时间线 / 平铺交互、公开 Bilibili 追番接口，以及项目 / 作品模块的信息架构。本博客在现有 Firefly-Mod 基础上按 SoraGinko 的数据、视觉与工程结构重新适配实现；不代表该项目作者为本站背书，也不将参考项目的作者内容、项目数据或视觉素材宣称为本站原创。 |
 
 同时感谢更上游的 [saicaca/fuwari](https://github.com/saicaca/fuwari)，Firefly 基于该项目发展而来。
 
@@ -58,7 +58,7 @@
 
 ## 当前版本状态
 
-- 当前按站长确认发布测试版：代码与构建检查已通过，真实浏览器验收和 README 页面截图后补。Git 推送不代表 Vercel 部署、正式域名计数或评论服务已完成验收。
+- 当前为测试版：代码与构建检查、本地生产预览的桌面 / 平板 / 移动端、浅色 / 深色及 Swup 导航验收已通过，页面预览为最终验收后生成的真实截图。Git 推送不代表 Vercel 部署、正式域名计数或评论服务已完成验收。
 - 桌面与移动端共用导航：首页 / 网站导航 / 文章 / 项目 / 生活 / 社交 / 关于；保留搜索入口。
 - 社交下含友情链接 / 友链朋友圈 / 留言板；关于下含关于我，以及启用时的音乐。入口随 `siteConfig.pages` 开关隐藏。
 - 网站导航数据沿用直接源码基础中的现有条目，并可在配置中继续维护。
@@ -67,7 +67,9 @@
 - 保留留言板、搜索、RSS 和静态机器可读内容入口。
 - `/projects/` 在构建时读取 SoraGinko520 的公开 GitHub 仓库，支持搜索、状态筛选、详情及可选本地说明。首页精选由 `projectsConfig.ts` 控制，无有效精选时隐藏。
 - `/fcircle/` 和友情链接共用 `friendsConfig`；构建时读取可选 `feedUrl` 或探测 RSS / Atom，提供时间线 / 平铺及自然日统计，坏站不阻断全站。
-- 生活页目前只有标题与介绍，尚未实现按“生活杂谈”分类聚合文章；相册、足迹、账单等扩展生活功能尚未合并。
+- `/life/` 只提供分类入口，不堆叠四类内容；相册直接复用 `/gallery/`，番剧 `/life/bilibili/`、书架 `/life/books/`、动态 `/life/moments/` 独立成页并共用分类导航。书籍与动态使用自己的本地配置；Bilibili 参照 LengxiQwQ 的公开追番接口，按自己的 UID 构建期读取番剧/剧集，支持搜索筛选，不显示个人主页卡片或私人内容。接口不可用时显示明确空态，不阻止构建。长篇生活杂谈继续使用文章集合；足迹、账单尚未合并。
+- “生活”导航下拉分类与首页 Life 卡共用配置。首页卡默认显示封面，点击才展开四格与中央正方形：相册 / Bilibili / 动态 / 书架，中央 Tags 复用 `/archive/`，可点击关闭恢复封面。原标签索引独立保留热门标签与文章数量，桌面与移动端共用真实标签统计；GitHub、RSS、留言板等原联系功能保留。
+- 页脚底部为版权/框架/真实主题与运行时间双栏；萌 ICP 独立配置，与正式 ICP / 公安备案分开。移动端自动堆叠，最后更新时间表示这份产物的构建时间。
 - 友链、赞助、音乐和相册页面是否启用，以 `src/config/` 中的实际页面开关为准。
 - 首页 UV / PV 和文章阅读量接入不蒜子公共计数（busuanzi.cc），仅正式 HTTPS 域名发送请求；预览不计数，失败显示明确空态。Umami Cloud 仍使用 Tracking + Share URL 作为独立后台分析，不读取 Cloud API、不抓取分享页、不混用两边数字。真实线上计数与 Tracking 接收情况需部署后单独验收。
 - GitHub Token 可选，只用于构建；API 失败使用最近一次本地成功缓存，没有缓存则显示真实空态，不添加虚构项目。
@@ -120,15 +122,54 @@
 
 ## 页面预览
 
-当前 SoraGinko 生产预览截图**尚未完成**。旧上游截图不再作为本站页面预览展示；现有图片文件保留，不冒充当前站点。
+以下截图于 2026-10-03 完成本轮最终浏览器验收后，从当前 `pnpm build` 产物的 `pnpm preview` 实际页面生成；不是参考站、设计稿或 AI 图片。相册、书架、动态与文章尚无站长记录，截图中的空态保留真实状态；番剧与友链朋友圈来自实际公开数据。留言板已检查前端显示，但评论后端发送尚未验收，不将其描述为可用服务。
 
-待完成构建和真实浏览器验收后，在现有 `docs/images/` 放入并展示：首页 Desktop、首页 Mobile、项目、友链朋友圈、友情链接、关于和留言板。截图必须来自当前 `pnpm preview` 的真实页面，不能以设计稿、参考站或 AI 图片替代。
+### 首页（桌面）
+
+![SoraGinko 首页桌面预览](docs/images/preview-home-desktop.jpg)
+
+<details>
+<summary>首页移动端、项目、生活、番剧、友链、关于与留言板</summary>
+
+#### 首页（移动端）
+
+![SoraGinko 首页移动端预览](docs/images/preview-home-mobile.jpg)
+
+#### 项目
+
+![项目列表预览](docs/images/preview-projects.jpg)
+
+#### 生活分类
+
+![生活分类入口预览](docs/images/preview-life.jpg)
+
+#### Bilibili 追番
+
+![真实公开追番预览](docs/images/preview-bilibili.jpg)
+
+#### 友情链接
+
+![友情链接预览](docs/images/preview-friends.jpg)
+
+#### 友链朋友圈
+
+![友链朋友圈预览](docs/images/preview-fcircle.jpg)
+
+#### 关于
+
+![关于与更新日志预览](docs/images/preview-about.jpg)
+
+#### 留言板（仅前端显示验收）
+
+![留言板前端预览](docs/images/preview-guestbook.jpg)
+
+</details>
 
 ## 维护与配置
 
 日常写文章、生活杂谈、关于我、友链审核和部署的详细操作见 [维护文档](docs/MAINTENANCE.md)；根目录 [MAINTENANCE.md](MAINTENANCE.md) 同步保留。
 
-本轮新增章节：友链朋友圈、About 更新日志、Umami 统计与 GitHub 项目维护。用户可见实质改动须在最终检查前自动补一条真实日志，规则见 `AGENTS.md / CLAUDE.md`。
+本轮新增章节：Life 相册、书架、公开追番、短动态、点击展开五宫格、文章标签索引与 Footer / 萌 ICP 维护，以及已有的友链朋友圈、About 更新日志、Umami 统计与 GitHub 项目维护。用户可见实质改动须在最终检查前自动补一条真实日志，规则见 `AGENTS.md / CLAUDE.md`。
 
 ## 本地使用
 
@@ -172,6 +213,7 @@ pnpm dev
 | `pioConfig.ts` | Live2D / Spine 看板娘配置 |
 | `fontConfig.ts` | 自定义字体配置 |
 | `galleryConfig.ts` | 相册配置 |
+| `lifeConfig.ts` | 书架、生活短动态、公开追番 UID、生活下拉与首页 Life 快捷入口 |
 | `friendsConfig.ts` | 友情链接与朋友圈的单一名单，可选 `feedUrl` 不影响普通友链 |
 | `projectsConfig.ts` | GitHub 项目精选、隐藏、中文标题、封面、状态与排序覆盖 |
 | `sponsorConfig.ts` | 赞助页配置 |

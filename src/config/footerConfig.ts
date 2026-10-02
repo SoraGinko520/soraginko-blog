@@ -20,12 +20,17 @@ export const footerConfig: FooterConfig = {
 	},
 
 	// Powered by 信息
+	moeIcp: {
+		enabled: true,
+		text: "萌ICP备20260283号",
+		url: "https://icp.gov.moe/?keyword=20260283",
+	},
 	poweredBy: [
 		{ label: "框架", name: "Astro", href: "https://astro.build" },
 		{
 			label: "主题",
-			name: "Firefly",
-			href: "https://github.com/CuteLeaf/Firefly",
+			name: "Firefly-Mod",
+			href: "https://github.com/MmzMing/my-blog",
 		},
 	],
 };

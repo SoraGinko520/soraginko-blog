@@ -123,7 +123,7 @@ export const siteConfig: SiteConfig = {
 		// 留言板页面开关，需要配置评论系统
 		guestbook: true,
 		// 相册页面开关
-		gallery: false,
+		gallery: true,
 		// 收藏API页面开关
 		collections: true,
 		// 音乐可视化页面开关
@@ -219,7 +219,7 @@ export const siteConfig: SiteConfig = {
 		// 为特定域名的图片添加 referrerpolicy="no-referrer" 属性
 		// 支持通配符 *，例如：["i0.hdslb.com", "*.bilibili.com"]
 		// 可解决指定域名图片加载时的 403 问题（如防盗链图片）
-		noReferrerDomains: ["*.alcy.cc"],
+		noReferrerDomains: ["*.alcy.cc", "*.hdslb.com"],
 	},
 
 	// 字体配置

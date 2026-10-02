@@ -2,6 +2,8 @@ import { LinkPresets } from "@/constants/link-presets";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 import { LinkPreset, type NavBarConfig, type NavBarLink } from "@/types/config";
+// 配置构造阶段直连同层模块，避免反向导入 index.ts 形成循环依赖。
+import { lifeConfig } from "./lifeConfig";
 import { siteConfig } from "./siteConfig";
 
 const buildNavBarConfig = (): NavBarConfig => {
@@ -34,7 +36,16 @@ const buildNavBarConfig = (): NavBarConfig => {
 		});
 	}
 	if (siteConfig.pages.projects) links.push(LinkPreset.Projects);
-	if (siteConfig.pages.life) links.push(LinkPreset.Life);
+	if (siteConfig.pages.life) {
+		links.push({
+			...LinkPresets[LinkPreset.Life],
+			children: lifeConfig.navigation.map((item) => ({
+				name: i18n(item.label),
+				url: item.url,
+				icon: item.icon,
+			})),
+		});
+	}
 	if (socialChildren.length > 0) {
 		links.push({
 			...LinkPresets[LinkPreset.Social],

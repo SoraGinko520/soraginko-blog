@@ -1,6 +1,7 @@
 ---
 type Pill = {
 	label: string;
+	statKey?: string;
 	value: string | number;
 	tone?: "dark" | "light" | "outline" | "solid";
 };
@@ -75,8 +76,8 @@ const {
 			>
 				<span>{pill.label}</span>
 				<strong
-					data-stat-value={statKind === "visits" ? pill.label : undefined}
-					data-stat-source={statKind === "visits" && pill.label !== "UV" && pill.label !== "PV" ? "" : undefined}
+					data-stat-value={statKind === "visits" ? pill.statKey : undefined}
+					data-stat-source={statKind === "visits" && !pill.statKey ? "" : undefined}
 				>
 					{pill.value}
 				</strong>

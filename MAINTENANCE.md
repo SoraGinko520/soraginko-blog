@@ -236,7 +236,7 @@ category: 生活杂谈
 
 ### 4.3 当前需要注意
 
-现有 `/life/` 页面仍然是占位页，不会自动按 `生活杂谈` 分类聚合文章。
+现有 `/life/` 提供分类入口，相册、书架、Bilibili 和短动态独立成页，不会自动按 `生活杂谈` 分类聚合长文。
 
 生活杂谈目前仍然会进入：
 
@@ -244,7 +244,125 @@ category: 生活杂谈
 - 归档；
 - 图谱。
 
-生活页分类聚合属于后续改造内容。
+生活页短动态在 `lifeConfig.moments` 维护；长篇生活杂谈继续使用文章集合。
+
+---
+
+## Life / 生活模块维护
+
+生活首页 `/life/` 只保留四个分类入口，不再把所有内容堆在同一页。相册沿用 `/gallery/`，番剧为 `/life/bilibili/`，书架为 `/life/books/`，短动态为 `/life/moments/`。各页共用分类导航，可以直接切换。短记录不是朋友圈；朋友圈 `/fcircle/` 展示好友博客文章，长篇生活杂谈仍放在 `src/content/posts/`。
+
+数据入口只有两处：相册沿用 `src/config/galleryConfig.ts` 与 `public/gallery/`，书籍、Bilibili、短动态及四个快捷入口统一在 `src/config/lifeConfig.ts`。不要另建 Life 内容集合或复制第二套图库。
+
+### 如何新增相册
+
+1. 在 `public/gallery/<id>/` 放入图片，例如 `public/gallery/my-album/001.webp`。图片须有自己的使用权；发布前检查定位、人物隐私及 EXIF。扫描只读取该目录的直接子文件，不递归子目录。
+2. 在 `galleryConfig.albums` 增加一个条目。以下是字段示例，不是已发布内容：
+
+```ts
+{
+  id: "my-album",
+  name: "相册标题",
+  description: "相册介绍",
+  date: "2026-10-03",
+  location: "拍摄地点",
+  tags: ["日常"],
+  // cover: "/gallery/my-album/cover.webp",
+}
+```
+
+真实字段是 `id`（同时作为 URL slug 与图片目录名）、`name`（标题）、可选 `description/date/location/tags/cover`，没有独立的 `title/slug/images` 字段。图片清单由目录自动生成，支持 jpg/jpeg/png/webp/avif/gif，按文件名排序，`cover.*` 优先。封面顺序：配置的 `cover` → 目录中的 `cover.*` → 第一张图片。
+
+相册详情为 `/gallery/<id>/`，生活分类的相册入口直接使用全集 `/gallery/`，不再在生活首页复制整份相册列表。修改标题或说明改配置；修改照片替换对应文件并重新构建。删除相册先移除配置条目，再按需要删除明确的图片目录；不要批量删除 `public/`。改 `id` 时同时调整目录，旧 URL 将失效。
+
+相册目录不存在时显示零张照片；损坏图片仍可能导致现有扫描失败，应在发布前检查图片是否可正常打开。当前代码没有照片上传后台。
+
+### 如何新增一本书
+
+在 `lifeConfig.books` 添加条目，`id/title/author/status` 必填，`cover/note` 可选：
+
+```ts
+{
+  id: "my-book",
+  title: "书名",
+  author: "作者",
+  cover: "/assets/images/book-cover.webp",
+  status: "reading",
+  note: "自己的阅读短记。",
+}
+```
+
+封面路径对应你实际放入 `public/assets/images/` 的图片；不填封面使用图标，不自动搜索书封。状态固定为 `reading`（在读）、`finished`（已读）、`planned`（想读）。书架统计来自实际条目，可点击状态筛选；没有 JS 时仍展示全部书籍。修改原条目即可更新状态或笔记，删除该条目即可移除，图片是否保留另行决定。
+
+### 如何配置 Bilibili
+
+`lifeConfig.bilibili` 按 UID 在构建期读取 Bilibili 的公开追番、追剧列表，展示封面、名称、更新进度、评分（接口有提供时）和简介。参照 LengxiQwQ 的公开追番接口适配，不展示自己的个人主页卡片，不同步私人收藏或账号动态，不需要 Cookie 或登录 Token。
+
+- `uid`：你的真实 UID，当前为 `546979349`。
+- `enabled`：是否同步公开追番列表；关闭时保留停用状态。
+
+在 Bilibili 开启追番/追剧列表公开，添加或取消追番后重新构建博客即可更新；不是每次打开页面重新抓取。页面支持名称搜索和番剧/剧集筛选，链接进入对应作品播放页。若接口风控、超时或隐私设置不允许读取，会显示“公开追番列表暂不可用”，不会伪装成真实的 0 部，也不会阻止全站构建。只有接口成功返回空列表时才显示暂无追番。当前没有私人接口代理或追番缓存；服务不可用时应稍后重新构建，不要把 Cookie 写入代码。
+
+### 如何新增一条动态
+
+在 `lifeConfig.moments` 中新增一项，`id/date/content` 必填，支持可选 `title/images/tags/draft`：
+
+```ts
+{
+  id: "my-note",
+  date: "2026-10-03T18:30:00+08:00",
+  title: "一条短记录",
+  content: "纯文本正文。\n第二行。",
+  images: ["/assets/images/my-note.webp"],
+  tags: ["日常"],
+  draft: true,
+}
+```
+
+示例默认是草稿，不要直接当作真实经历发布。正文是纯文本，可换行，不执行 HTML 或 Markdown。图片使用真实本地路径或公开图片 URL，不填 `images` 也可发布。修改原条目即可改正文、日期、图片或标签；删除条目即可移除动态。
+
+动态按日期从最新到最旧排序；无效日期、`draft: true` 不展示，生产构建也排除尚未到发布时间的条目。建议使用带 `+08:00` 的时间；显示日期遵循站点时区。动态标签只装饰短记录，**不计入文章标签索引**。需要代码块或长文排版时改写为博客文章。
+
+### 首页 Life 快捷入口
+
+地图指南右下默认显示 Life 封面卡；点击（键盘 Enter / Space 也可）才展开四格与中央正方形，再点击右上角关闭控件恢复封面。不是悬停触发，也不是默认露出五宫格。桌面与移动端复用同一个原生 details 组件；导航栏的“生活”则是下拉分类菜单，两处共享 `lifeConfig.navigation`：
+
+| 位置 | 内容 | 当前路径 |
+| --- | --- | --- |
+| 左上 | 相册 / Album | `/gallery/` |
+| 右上 | 哔哩哔哩 / Bilibili | `/life/bilibili/` |
+| 左下 | 动态 / Moments | `/life/moments/` |
+| 右下 | 书架 / Bookshelf | `/life/books/` |
+| 中央 | 标签 / Tags | `/archive/` |
+
+外围四格的 `id/label/ariaLabel/eyebrow/url/icon/position` 统一在 `lifeConfig.navigation` 维护。中文标签与无障碍文案使用现有 i18n key，新增 key 必须补齐全部语言表。改变 URL 时同时确认对应页面文件存在，不再使用旧的 `/life/#...` 分区锚点。关闭 `siteConfig.pages.life` 会隐藏首页五宫格及生活分类页的站点地图条目。
+
+中央标签通过现有 `getTagUrl("")` 复用完整归档标签入口，**不在 Life 配置复制标签数据**。当前项目没有独立的 `/tags/` 路由。原 GitHub、RSS、留言板等联系功能仍保留在原导航、个人社交链接及对应页面。
+
+### 标签索引
+
+首页同时存在两个层级：**标签索引卡**展示热门标签和文章数量；**五宫格中央 Tags**只提供进入完整标签系统的快捷链接。两者复用同一个归档标签系统，不是两套 Tags。
+
+标签索引由 `getTagList()` 从真实 `posts` 集合的 frontmatter 计算，先剔除非字符串、修剪两端空格并排除空标签，每个有效标签出现一次便计数一次；每篇文章应避免重复标签。生产环境不计草稿，开发环境允许看到草稿。示例：
+
+```yaml
+---
+title: 学习记录
+published: 2026-10-03
+draft: true
+tags:
+  - Astro
+  - TypeScript
+category: 学习文档
+---
+```
+
+发布时将 `draft` 改为 `false`，重新构建后标签统计、热门标签、标签筛选及完整标签列表同步变化。首页最多显示 5 个热门标签，按文章数量降序，数量相同沿用当前稳定排序；另有“全部标签”胶囊。
+
+单标签实际 URL 是 `/archive/?tag=Astro`（名称由 `getTagUrl` 自动编码），不是 `/tags/astro/`。全部标签及五宫格中央入口均为 `/archive/`，在现有归档页选择标签筛选。空文章集合不伪造 #AI、#Java 或数量，仍保留标题和完整入口。分类索引继续按文章 `category` 独立统计。
+
+Life 修改后执行 `pnpm check`、`pnpm type-check`、`pnpm exec biome check ./src`、`pnpm build`、`pnpm preview`，再检查亮暗主题、手机入口与 Swup 往返。最终 README 截图须在全部页面正式验收通过后生成，不用参考站截图代替。
+
 
 ---
 
@@ -668,7 +786,7 @@ siteAnniversary
 
 ---
 
-## 13. 页脚“本站已苟活”时间
+## 13. 页脚“本站已运行”时间
 
 页脚运行时间使用另一个配置：
 
@@ -698,9 +816,9 @@ siteStartDate
 
 以后修改站点配置时保留这个起站时刻，不随重新构建或后续提交重置。
 
-### 13.3 最近更新时间
+### 13.3 最后更新时间
 
-“最近更新于”默认使用本次生产构建的时间。
+“最后更新于”默认使用本次生产构建的时间，不使用访客打开页面的时间。
 
 它表示：
 
@@ -714,6 +832,20 @@ siteStartDate
 - 网站真正完成部署的时间。
 
 重新构建会更新这个时间。
+
+---
+
+## Footer / 页脚维护
+
+页脚配置在 `src/config/footerConfig.ts`，展示组件是 `src/components/layout/Footer.astro`，样式在 `src/styles/components/footer.css`。不要另建第二个页脚或重复计时器。
+
+- **版权与站名**：版权年份取构建年份，名称取 `homeConfig.name`。当前为 © 2026 SoraGinko；个人签名与联系链接继续保留。
+- **框架与主题**：`poweredBy` 维护显示名称和链接。当前框架为 Astro，直接源码基础为 Firefly-Mod（MmzMing/my-blog），不要改成无关主题名。
+- **萌 ICP**：`moeIcp.enabled/text/url` 控制独立第二行，当前是“萌ICP备20260283号”，链接 `https://icp.gov.moe/?keyword=20260283`，新标签打开并带 `noopener noreferrer`。这不是工信部正式备案，不能移入 `beian.icp`。
+- **正式备案**：`beian.icp/police` 当前为空，仅在拥有真实正式备案后填写；不编造备案号。
+- **运行时间**：使用 `siteConfig.siteStartDate` 的真实起站时刻（见第 13 节），已有常驻页脚逻辑每秒更新，不因 Swup 导航或重新构建归零；无效/未来日期显示待设置。
+- **最后更新时间**：使用构建产物内保存的构建时间。它不是文章更新时间或 Vercel 成功上线时间，重新构建才改变基准；跨日后显示真实过去天数。
+- **布局与测试**：桌面底部左侧版权/框架/主题及萌 ICP，右侧运行时间/最后更新时间；移动端自动堆叠。修改后检查深浅主题、长文案和导航往返，确认没有横向溢出、重复计时器或错误外链。
 
 ---
 
@@ -1040,7 +1172,7 @@ pnpm preview
 
 ### 21.5 为什么生活杂谈没有出现在生活页？
 
-当前 `/life/` 仍然是占位页，暂未实现按 `生活杂谈` 自动聚合。
+Life 的动态来自 `lifeConfig.moments`，相册来自 Gallery，书架来自本地配置，Bilibili 按真实 UID 构建期同步公开追番；长篇 `生活杂谈` 仍在文章列表、归档和图谱展示，不自动变成生活短动态。
 
 ### 21.6 为什么站点运行时间还没开始？
 

@@ -1,6 +1,8 @@
 ---
+import CoverImage from "@/components/common/CoverImage.astro";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
+import { buildCoverImage } from "@/utils/cover-image";
 import { url } from "@/utils/url-utils";
 
 interface Props {
@@ -14,7 +16,13 @@ interface Props {
 	photoCount: number;
 }
 
-const { id, name, cover, date, location, tags, photoCount } = Astro.props;
+const { id, name, cover, description, date, location, tags, photoCount } =
+	Astro.props;
+const image = await buildCoverImage({
+	image: cover,
+	widths: [400, 800],
+	sizes: "(max-width: 640px) 100vw, 33vw",
+});
 
 function truncateLocation(loc: string | undefined, maxChars = 4): string {
 	if (!loc) return "";
@@ -33,28 +41,20 @@ const displayLocation = truncateLocation(location);
 >
   <!-- Image wrapper -->
   <div class="album-card-imgbox">
-    {cover ? (
-      <img
-        src={cover}
-        alt={name}
-        class="album-card-img"
-        loading="lazy"
-        decoding="async"
-        width="400"
-        height="300"
-      />
+    {image ? (
+      <CoverImage cover={image} alt={name} class="album-card-img" />
     ) : (
       <div class="w-full h-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
         <div class="text-gray-400 text-5xl">&#x1f4f7;</div>
       </div>
     )}
 
-    <!-- Photo count badge (常驻，悬停时消失) -->
+    <!-- 图片数量和标签常驻，触屏不依赖悬停。 -->
     <div class="album-card-badge">
       {photoCount} {i18n(I18nKey.galleryPhotos)}
     </div>
 
-    <!-- Tags overlay (图片内左下角，悬停时消失，最多4个) -->
+    <!-- 图片内左下角标签，最多 4 个。 -->
     {tags && tags.length > 0 && (
       <div class="album-card-tags-overlay">
         {tags.slice(0, 4).map((tag) => (
@@ -64,9 +64,10 @@ const displayLocation = truncateLocation(location);
     )}
   </div>
 
-  <!-- Details (悬停时露出) -->
+  <!-- 相册说明与日期常驻。 -->
   <div class="album-card-details">
     <h3 class="album-card-title">{name}</h3>
+    {description && <p class="album-card-description">{description}</p>}
 
     <div class="album-card-meta">
       {date && <span>{date}</span>}

@@ -1,0 +1,35 @@
+---
+import CoverImage from "@/components/common/CoverImage.astro";
+import Icon from "@/components/common/Icon.astro";
+import { homeConfig, lifeConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import { buildCoverImage } from "@/utils/cover-image";
+import { getTagUrl, url } from "@/utils/url-utils";
+
+const cover = await buildCoverImage({
+	image: homeConfig.hero.authorAvatarImage,
+	widths: [400, 600],
+	sizes: "(max-width: 768px) 100vw, 33vw",
+});
+---
+
+<!-- 原生折叠：默认只显示生活封面，点击或 Enter/Space 才展开五宫格。 -->
+<details class="guide-life-panel">
+	<summary class="guide-life-cover">
+		{cover && <span class="guide-life-cover__visual" aria-hidden="true"><CoverImage cover={cover} alt="" class="guide-life-cover__image" /></span>}
+		<span class="guide-life-cover__heading"><span class="guide-card__eyebrow" lang="en">LIFE</span><span class="guide-life-cover__title">{i18n(I18nKey.life)}</span><span class="guide-life-cover__hint">{i18n(I18nKey.lifeOpenQuickLinks)}</span></span>
+		<span class="guide-life-cover__icons" aria-hidden="true">{lifeConfig.navigation.map((item) => <Icon name={item.icon} />)}</span>
+		<span class="guide-life-cover__close"><Icon name="material-symbols:close-rounded" aria-hidden="true" /><span class="sr-only">{i18n(I18nKey.lifeCloseQuickLinks)}</span></span>
+	</summary>
+<nav class="guide-life" aria-label={i18n(I18nKey.lifeQuickLinks)}>
+	{lifeConfig.navigation.map((item) => (
+		<a class={`guide-life__cell guide-life__cell--${item.position}`} href={url(item.url)} aria-label={i18n(item.ariaLabel)}>
+			<span class="guide-life__content"><Icon name={item.icon} aria-hidden="true" /><span>{i18n(item.label)}</span><small lang="en">{item.eyebrow}</small></span>
+		</a>
+	))}
+	<a class="guide-life__center" href={getTagUrl("")} aria-label={i18n(I18nKey.browseAllTags)}>
+		<Icon name="material-symbols:label-outline" aria-hidden="true" /><span>{i18n(I18nKey.tags)}</span><small lang="en">Tags</small>
+	</a>
+</nav>
+</details>

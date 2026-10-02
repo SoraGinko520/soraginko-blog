@@ -18,7 +18,7 @@ const buildDate = dayjs();
 const buildTimestamp = buildDate.valueOf();
 const currentYear = buildDate.year();
 const siteStartDate = siteConfig.siteStartDate || "";
-const { socialLinks, beian, poweredBy } = footerConfig;
+const { socialLinks, beian, poweredBy, moeIcp } = footerConfig;
 const bioText = Array.isArray(homeConfig.bio)
 	? homeConfig.bio[0] || ""
 	: homeConfig.bio || "";
@@ -155,6 +155,7 @@ const opensInNewTab = (href: string) => !/^(mailto:|tel:)/i.test(href);
 						</>
 					))}
 				</div>
+				{moeIcp.enabled && <div class="site-footer__beian"><a href={moeIcp.url} target="_blank" rel="noopener noreferrer">{moeIcp.text}</a></div>}
 				{(beian.icp || beian.police) && (
 					<div class="site-footer__beian">
 						{beian.icp && (

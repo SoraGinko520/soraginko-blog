@@ -4,6 +4,7 @@ import Icon from "@components/common/Icon.astro";
 import DataMetricCard from "@components/features/DataMetricCard.astro";
 import I18nKey from "@i18n/i18nKey";
 import { i18n } from "@i18n/translation";
+import HomeLifeNavigation from "@/components/layout/HomeLifeNavigation.astro";
 import { homeConfig, siteConfig } from "@/config";
 import {
 	getCategoryList,
@@ -91,8 +92,18 @@ const articlePills = [
 const umamiConfig = siteConfig.analytics?.umamiAnalytics;
 const statsShareUrl = getUmamiShareUrl(umamiConfig?.shareId);
 const visitPills = [
-	{ label: "UV", value: "--", tone: "light" as const },
-	{ label: "PV", value: "--", tone: "dark" as const },
+	{
+		label: i18n(I18nKey.siteStatsVisitors),
+		value: "--",
+		statKey: "UV",
+		tone: "light" as const,
+	},
+	{
+		label: i18n(I18nKey.viewsBrowseLabel),
+		value: "--",
+		statKey: "PV",
+		tone: "dark" as const,
+	},
 	{
 		label: i18n(I18nKey.siteStatsSource),
 		value: "不蒜子",
@@ -190,14 +201,15 @@ const visitPills = [
 				</div>
 			</section>
 
-			<section class="guide-card guide-card--index guide-card--tags" data-tag-fan aria-labelledby="guide-tags-title">
+			<section class="guide-card guide-card--index guide-card--tags" aria-labelledby="guide-tags-title">
 				<p class="guide-card__eyebrow">TAGS</p>
 				<h3 id="guide-tags-title">{i18n(I18nKey.tagIndex)}</h3>
 				<div class="guide-tag-list">
 					{tags.slice(0, 5).map((tag) => <a href={getTagUrl(tag.name)}>#{tag.name}<span>{tag.count}</span></a>)}
-					<a class="guide-tag-list__all" href={url("/archive/")}>{`${i18n(I18nKey.browseAllTags)} `}<Icon name="material-symbols:arrow-outward-rounded" is:inline /></a>
+					<a class="guide-tag-list__all" href={getTagUrl("")}>{`${i18n(I18nKey.browseAllTags)} `}<Icon name="material-symbols:arrow-outward-rounded" is:inline /></a>
 				</div>
 			</section>
+			{siteConfig.pages.life && <section class="guide-card guide-card--life"><HomeLifeNavigation /></section>}
 		</div>
 	</div>
 </section>
@@ -251,6 +263,7 @@ const visitPills = [
 		const latestCard = layer.querySelector<HTMLElement>(".guide-card--latest");
 		const categoriesCard = layer.querySelector<HTMLElement>(".guide-card--categories");
 		const tagsCard = layer.querySelector<HTMLElement>(".guide-card--tags");
+		const lifeCard = layer.querySelector<HTMLElement>(".guide-card--life");
 
 		if (
 			!visitCard ||
@@ -268,7 +281,7 @@ const visitPills = [
 			archiveCard,
 			pinnedCard,
 			latestCard,
-			dealCards: [categoriesCard, tagsCard],
+			dealCards: [categoriesCard, tagsCard, ...(lifeCard ? [lifeCard] : [])],
 		};
 	}
 
@@ -395,94 +408,6 @@ const visitPills = [
 		});
 	}
 
-	function initTagFan(layer: HTMLElement) {
-		if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-		const card = layer.querySelector<HTMLElement>("[data-tag-fan]");
-		const list = card?.querySelector<HTMLElement>(".guide-tag-list");
-		if (!card || !list) return;
-		const links = Array.from(list.querySelectorAll<HTMLElement>("a"));
-		if (links.length < 3) return;
-
-		let flat = false;
-		let intentTimer: number | undefined;
-		let focusOutTimer = 0;
-
-		// 每张卡的固定散落姿态（rem 平移 + 旋转），模拟随手丢下的卡牌堆，不围成弧线
-		const SCATTER_POSES = [
-			{ x: -0.55, y: -0.35, rotation: -7 },
-			{ x: 0.18, y: -0.7, rotation: 4 },
-			{ x: 0.62, y: 0.12, rotation: 16 },
-			{ x: -0.32, y: 0.4, rotation: 9 },
-			{ x: 0.12, y: -0.08, rotation: -6 },
-			{ x: 0.48, y: 0.42, rotation: 13 },
-		];
-		const SCATTER_Z = [1, 3, 2, 1, 2, 4];
-
-		const computeScatterTargets = () => {
-			const rem = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
-			return links.map((_, index) => {
-				const pose = SCATTER_POSES[index % SCATTER_POSES.length];
-				return {
-					x: pose.x * rem,
-					y: pose.y * rem,
-					rotation: pose.rotation,
-					zIndex: SCATTER_Z[index % SCATTER_Z.length],
-				};
-			});
-		};
-
-		const applyState = (nextFlat: boolean, immediate = false) => {
-			flat = nextFlat;
-			card.classList.toggle("is-flat", flat);
-			const ease = flat ? "expo.out" : "power4.out";
-			if (flat) {
-				links.forEach((link, index) => {
-					gsap.to(link, { x: 0, y: 0, rotation: 0, zIndex: index, duration: immediate ? 0 : 0.72, ease, overwrite: "auto", delay: immediate ? 0 : index * 0.035 });
-				});
-				return;
-			}
-			const targets = computeScatterTargets();
-			links.forEach((link, index) => {
-				const target = targets[index];
-				if (!target) return;
-				gsap.to(link, { x: target.x, y: target.y, rotation: target.rotation, zIndex: target.zIndex, duration: immediate ? 0 : 0.85, ease, overwrite: "auto", delay: immediate ? 0 : index * 0.04 });
-			});
-		};
-
-		// 悬停意图防抖：快速进出不会反复触发动画，中途切换由 overwrite 平滑接管
-		const scheduleIntent = (nextFlat: boolean, delay: number) => {
-			if (intentTimer !== undefined) window.clearTimeout(intentTimer);
-			intentTimer = undefined;
-			if (flat === nextFlat) return;
-			intentTimer = window.setTimeout(() => { intentTimer = undefined; applyState(nextFlat); }, delay);
-		};
-
-		applyState(false, true);
-
-		const enter = () => scheduleIntent(true, 70);
-		const leave = () => scheduleIntent(false, 140);
-		const focusIn = () => scheduleIntent(true, 0);
-		const focusOut = () => {
-			window.clearTimeout(focusOutTimer);
-			focusOutTimer = window.setTimeout(() => { if (!card.contains(document.activeElement)) scheduleIntent(false, 80); }, 0);
-		};
-
-		card.addEventListener("pointerenter", enter);
-		card.addEventListener("pointerleave", leave);
-		card.addEventListener("focusin", focusIn);
-		card.addEventListener("focusout", focusOut);
-		cleanups.push(() => {
-			if (intentTimer !== undefined) window.clearTimeout(intentTimer);
-			window.clearTimeout(focusOutTimer);
-			card.removeEventListener("pointerenter", enter);
-			card.removeEventListener("pointerleave", leave);
-			card.removeEventListener("focusin", focusIn);
-			card.removeEventListener("focusout", focusOut);
-			gsap.killTweensOf(links);
-			gsap.set(links, { clearProps: "transform,zIndex" });
-			card.classList.remove("is-flat");
-		});
-	}
 
 	function initGuideRotators(layer: HTMLElement) {
 		const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
@@ -647,7 +572,6 @@ const visitPills = [
 			return;
 		}
 		const token = ++guideOpeningToken;
-		initTagFan(layer);
 		initGuideRotators(layer);
 		void initGuideOpening(layer, token);
 	}

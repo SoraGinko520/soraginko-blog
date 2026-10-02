@@ -33,7 +33,18 @@ export const friendsPageConfig: FriendsPageConfig = {
 	chat: [],
 };
 
-export const friendsConfig: FriendLink[] = [];
+export const friendsConfig: FriendLink[] = [
+	{
+		title: "Kihana's Blog",
+		imgurl: "https://blog.kihana.asia/assets/favicon.ico",
+		desc: "Kihana的个人博客",
+		siteurl: "https://blog.kihana.asia/",
+		feedUrl: "https://blog.kihana.asia/feed.xml",
+		tags: ["博客"],
+		weight: 100,
+		enabled: true,
+	},
+];
 
 // 获取启用的友链并进行排序
 export const getEnabledFriends = (): FriendLink[] => {
