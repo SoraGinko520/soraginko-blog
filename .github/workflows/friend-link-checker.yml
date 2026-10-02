@@ -26,8 +26,6 @@ jobs:
          startsWith(github.event.comment.body, '/recheck-friend'))))
     runs-on: ubuntu-24.04
     timeout-minutes: 20
-    env:
-      PLAYWRIGHT_BROWSERS_PATH: ${{ runner.temp }}/friend-link-browsers
     permissions:
       contents: write
       issues: write
@@ -45,6 +43,10 @@ jobs:
         uses: pnpm/action-setup@a7487c7e89a18df4991f7f222e4898a00d66ddda
       - name: Install locked dependencies
         run: pnpm install --frozen-lockfile
+      - name: Configure Playwright browser path
+        shell: bash
+        run: |
+          echo "PLAYWRIGHT_BROWSERS_PATH=$RUNNER_TEMP/friend-link-browsers" >> "$GITHUB_ENV"
       # 仅此 CI 下载与运行现有 Playwright，博客开发与本地验收不运行它。
       - name: Install Chromium for CI validation
         run: pnpm exec playwright install --with-deps chromium
