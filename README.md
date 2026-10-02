@@ -69,18 +69,14 @@ pnpm dev
 
 评论项目的非敏感配置示例位于 [deployment/waline.env.example](deployment/waline.env.example)，数据库初始化脚本位于 [deployment/waline.pgsql](deployment/waline.pgsql)。SQL 应在新建的空数据库中执行一次；数据库连接串、密码和其他密钥只存放在服务端环境变量中，不提交到仓库。博客项目不需要填写 Waline 的数据库环境变量。
 
-## 第三方素材与模型说明
+## 第三方素材与说明
 
 源码许可证不自动涵盖图片、字体、音乐、Spine 或 Live2D 模型。现有素材不宣称为 SoraGinko 原创；后续启用、替换或再分发时必须分别核对授权。
 
 首次源码上传不包含 `public/pio/models/` 下尚未确认再分发授权的模型文件。本地文件保留，模型功能保持关闭，不以关闭功能或使用私有仓库代替授权。
 
-直接源码基础的 README 对 Live2D 模型另有以下声明，在此保留其来源和限制说明：
-
-- 模型作者为 B 站用户 [木果阿木果](https://space.bilibili.com/886695)，相关来源见 [原作者视频](https://www.bilibili.com/video/BV1Ts9eBkEXX)。
+说明：
 - 使用前必须征得作者同意，并标明作者信息和来源地址。
-- 模型设计版权归属库洛。
-- 模型可用于鸣潮相关视频和直播，需标注来源。
 - 禁止商用盈利，禁止二次上传转载引流。
 
 这些说明不是本站已经取得授权的声明，不能以“个人博客、非商业用途”为由忽略作者的授权要求。
