@@ -2,6 +2,14 @@
 
 > 本文件是项目最高优先级的架构规范。所有代码修改必须遵守以下规则。
 
+> 当前实际架构及生命周期以 `AGENTS.md`、`src/utils/swup-lifecycle.ts` 和真实代码为准。本文件中旧的 Astro 6、全局 CSS 合并及直接监听页面事件等说明不应覆盖当前工程实现。
+
+## 用户可见改动的自动更新日志
+
+每次对用户可见页面、功能、交互、导航、样式或部署行为进行实质修改时，在最终检查和提交之前，自动在 `src/content/spec/log.md` 顶部新增一条结构化更新日志。纯格式化、无用户可见影响的小改动可不记录。不得编造未完成事项，不从 Git commit 机械生成日志，不把未验收的服务写成已上线。
+
+使用二级标题，随后填写 `日期：YYYY-MM-DD`、`类型：feat | fix | style | refactor | chore`、`页面：一个或多个 page key`、`简述：一句话`，再写 Markdown 详情；日期用实际当天日期，最新在最上方。页面支持 `home / projects / friends / fcircle / guestbook / about / archive / list / categories / post / life / site`；实际可视化上限为 30 条。详细维护说明见 `docs/MAINTENANCE.md`。日志维护不代表获得 Git 提交、推送或部署授权，仍遵守用户当次指令与验收门槛。
+
 ---
 
 ## 一、常用命令

@@ -6,55 +6,24 @@ interface Props {
 }
 
 const { config } = Astro.props;
-const stickerStyle = [
-	`--home-hero-left-eye-x: ${config.eye.xPercent}%`,
-	`--home-hero-left-eye-y: ${config.eye.yPercent}%`,
-	`--home-hero-right-eye-x: ${config.rightEye.xPercent}%`,
-	`--home-hero-right-eye-y: ${config.rightEye.yPercent}%`,
-	`--home-hero-mouth-x: ${config.mouth.xPercent}%`,
-	`--home-hero-mouth-y: ${config.mouth.yPercent}%`,
-	`--home-hero-mouth-width: ${config.mouth.widthPercent}%`,
-	`--home-hero-mouth-height: ${config.mouth.heightPercent}%`,
-	`--home-hero-mouth-rotation: ${config.mouth.rotation}deg`,
-].join(";");
 ---
 
 <figure
 	class="home-hero__sticker"
-	style={stickerStyle}
+	style={`--home-hero-sticker-frames: ${config.frameCount}`}
 	data-hero-sticker
-	data-eye-travel-x={config.eye.travelXPercent}
-	data-eye-travel-y={config.eye.travelYPercent}
+	data-frame-count={config.frameCount}
+	data-expression="idle"
 >
 	<img
 		class="home-hero__sticker-image"
+		data-hero-sticker-image
 		src={config.image}
 		alt={config.alt}
-		width="1254"
-		height="1254"
+		width={config.frameSize * config.frameCount}
+		height={config.frameSize}
 		loading="eager"
 		decoding="async"
+		draggable="false"
 	/>
-	<span
-		class="home-hero__sticker-feature home-hero__sticker-eye home-hero__sticker-eye--left"
-		data-hero-sticker-feature
-		data-motion-scale="1"
-		aria-hidden="true"
-	>
-		<span class="home-hero__sticker-eye-pupil"></span>
-	</span>
-	<span
-		class="home-hero__sticker-feature home-hero__sticker-eye home-hero__sticker-eye--right"
-		data-hero-sticker-feature
-		data-motion-scale="1"
-		aria-hidden="true"
-	>
-		<span class="home-hero__sticker-eye-pupil"></span>
-	</span>
-	<span
-		class="home-hero__sticker-feature home-hero__sticker-mouth"
-		data-hero-sticker-feature
-		data-motion-scale={config.mouth.travelScale}
-		aria-hidden="true"
-	></span>
 </figure>

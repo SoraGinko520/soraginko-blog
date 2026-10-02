@@ -1,0 +1,78 @@
+---
+import CoverImage from "@/components/common/CoverImage.astro";
+import Icon from "@/components/common/Icon.astro";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import type { ProjectCardProps } from "@/types/projects";
+import { buildCoverImage } from "@/utils/cover-image";
+import { formatDateI18n } from "@/utils/date-utils";
+import { getProjectStatusKey } from "@/utils/github-projects";
+import { url } from "@/utils/url-utils";
+import "@/styles/pages/projects.css";
+
+interface Props extends ProjectCardProps {}
+
+const { project, headingLevel: Heading = "h2" } = Astro.props;
+const cover = await buildCoverImage({
+	image: project.cover,
+	widths: [480, 800],
+	sizes: "(min-width: 768px) 50vw, 100vw",
+});
+const detailUrl = url(`/projects/${project.slug}/`);
+const searchText = [
+	project.title,
+	project.name,
+	project.description,
+	project.language,
+	...project.tags,
+]
+	.join(" ")
+	.toLocaleLowerCase();
+---
+
+<article
+	class="project-card"
+	data-project-card
+	data-project-status={project.status}
+	data-project-search={searchText}
+>
+	{cover && (
+		<a class="project-card__cover" href={detailUrl} tabindex="-1" aria-hidden="true">
+			<CoverImage cover={cover} alt={`${project.title} ${i18n(I18nKey.projectCover)}`} class="project-card__image" />
+		</a>
+	)}
+	<div class="project-card__body">
+		<span class="project-status" data-status={project.status}>{i18n(getProjectStatusKey(project.status))}</span>
+		<Heading class="project-card__title"><a href={detailUrl}>{project.title}</a></Heading>
+		<p class="project-card__description">{project.description || i18n(I18nKey.projectsNoDescription)}</p>
+		{(project.language || project.tags.length > 0) && (
+			<ul class="project-card__tags">
+				{project.language && <li>{project.language}</li>}
+				{project.tags.filter((tag) => tag !== project.language).map((tag) => <li>{tag}</li>)}
+			</ul>
+		)}
+		<dl class="project-card__meta">
+			<div>
+				<dt class="sr-only">{i18n(I18nKey.projectsStars)}</dt>
+				<dd><Icon name="material-symbols:star-outline-rounded" aria-hidden="true" />{project.stars}</dd>
+			</div>
+			<div>
+				<dt class="sr-only">{i18n(I18nKey.projectsForks)}</dt>
+				<dd><Icon name="material-symbols:fork-right-rounded" aria-hidden="true" />{project.forks}</dd>
+			</div>
+			<div class="project-card__updated">
+				<dt>{i18n(I18nKey.projectsUpdated)}</dt>
+				<dd><time datetime={project.updatedAt}>{formatDateI18n(project.updatedAt)}</time></dd>
+			</div>
+		</dl>
+		<div class="project-card__links">
+			<a class="project-link" href={project.githubUrl} target="_blank" rel="noopener noreferrer">
+				<Icon name="fa7-brands:github" aria-hidden="true" />{i18n(I18nKey.projectsGitHub)}
+			</a>
+			{project.demoUrl && <a class="project-link" href={project.demoUrl} target="_blank" rel="noopener noreferrer">
+				<Icon name="material-symbols:open-in-new-rounded" aria-hidden="true" />{i18n(I18nKey.projectsDemo)}
+			</a>}
+			<a class="project-link" href={detailUrl}>{i18n(I18nKey.projectsDetails)}<span class="sr-only"> — {project.title}</span></a>
+		</div>
+	</div>
+</article>

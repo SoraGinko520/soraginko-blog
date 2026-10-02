@@ -10,39 +10,6 @@ interface Track {
 	pic?: string;
 }
 
-interface MusicState {
-	track: Track | null;
-	playlist: Track[];
-	currentIndex: number;
-	isPlaying: boolean;
-	volume: number;
-	isMuted: boolean;
-	playMode: number;
-	currentTimeStr: string;
-	durationStr: string;
-	progress: number;
-	initialized: boolean;
-}
-
-interface FireflyMusicManager {
-	getState: () => MusicState;
-	init: () => void;
-	togglePlay: () => void;
-	playNext: () => void;
-	playPrev: () => void;
-	cyclePlayMode: () => void;
-	toggleMute: () => void;
-	setVolume: (value: number) => void;
-	seek: (percent: number) => void;
-	playTrackByIndex: (index: number) => void;
-}
-
-declare global {
-	interface Window {
-		__fireflyMusic?: FireflyMusicManager;
-	}
-}
-
 const MODE_LABELS = [
 	i18n(I18nKey.playModeList),
 	i18n(I18nKey.playModeSingle),
@@ -60,19 +27,37 @@ let currentTimeStr = $state("0:00");
 let durationStr = $state("0:00");
 let progress = $state(0);
 let initialized = $state(false);
+let isLoading = $state(true);
+let errorMessage = $state("");
+let audioDuration = $state(0);
 let rightPanelMode = $state<"tools" | "playlist">("tools");
-let playlistListEl: HTMLDivElement;
+let playlistListEl = $state<HTMLUListElement>();
 let isDraggingProgress = $state(false);
 let isDraggingVolume = $state(false);
 let progressTrackHover = $state(false);
 let modeHintPulse = $state(false);
 let modeHintTimer: ReturnType<typeof setTimeout> | undefined;
+let syncTimer: ReturnType<typeof setTimeout> | undefined;
+let managerTimer: ReturnType<typeof setTimeout> | undefined;
+const SLIDER_STEP = 5;
+
+const statusText = $derived(
+	errorMessage ||
+		(isLoading
+			? i18n(I18nKey.playlistLoading)
+			: initialized && playlist.length === 0
+				? i18n(I18nKey.musicNoSongs)
+				: ""),
+);
+const transportDisabled = $derived(isLoading || playlist.length === 0);
 
 // Clip boundary (user units) for the accent-filled portion of the wave.
 const volumePercent = $derived(Math.round((isMuted ? 0 : volume) * 100));
 
-// 未加载（未初始化 / 无曲目）或未播放时，进度条不可拖拽
-const progressDisabled = $derived(!initialized || !currentTrack || !isPlaying);
+// 曲目时长尚未取得时不能定位；暂停后仍允许调整播放位置。
+const progressDisabled = $derived(
+	!initialized || !currentTrack || audioDuration <= 0,
+);
 
 function getPercentFromPointerX(track: HTMLElement, clientX: number) {
 	const rect = track.getBoundingClientRect();
@@ -92,6 +77,7 @@ function seekFromEvent(track: HTMLElement, clientX: number) {
 }
 
 function onProgressPointerDown(e: PointerEvent) {
+	if (progressDisabled) return;
 	const track = e.currentTarget as HTMLElement;
 	track.setPointerCapture(e.pointerId);
 	isDraggingProgress = true;
@@ -193,8 +179,61 @@ function syncPlaylistScroll() {
 	);
 	activeItem?.scrollIntoView({
 		block: "center",
-		behavior: "smooth",
+		behavior: window.matchMedia("(prefers-reduced-motion: reduce)").matches
+			? "auto"
+			: "smooth",
 	});
+}
+
+function queuePlaylistScroll() {
+	clearTimeout(syncTimer);
+	syncTimer = setTimeout(syncPlaylistScroll, 0);
+}
+
+function sliderValue(event: KeyboardEvent, value: number): number | null {
+	let nextValue = value;
+	switch (event.key) {
+		case "ArrowRight":
+		case "ArrowUp":
+			nextValue += SLIDER_STEP;
+			break;
+		case "ArrowLeft":
+		case "ArrowDown":
+			nextValue -= SLIDER_STEP;
+			break;
+		case "Home":
+			nextValue = 0;
+			break;
+		case "End":
+			nextValue = 100;
+			break;
+		default:
+			return null;
+	}
+	event.preventDefault();
+	return Math.max(0, Math.min(100, nextValue));
+}
+
+function onProgressKeyDown(event: KeyboardEvent) {
+	if (progressDisabled) return;
+	const value = sliderValue(event, progress);
+	if (value === null) return;
+	progress = value;
+	window.__fireflyMusic?.seek(value / 100);
+}
+
+function onVolumeKeyDown(event: KeyboardEvent) {
+	const value = sliderValue(event, volumePercent);
+	if (value === null) return;
+	window.__fireflyMusic?.setVolume(value / 100);
+}
+
+function retryLoad() {
+	const mgr = window.__fireflyMusic;
+	if (!mgr || isLoading) return;
+	errorMessage = "";
+	isLoading = true;
+	void mgr.init();
 }
 
 function togglePlay() {
@@ -234,13 +273,13 @@ function playTrack(index: number) {
 
 function openPlaylist() {
 	rightPanelMode = "playlist";
-	setTimeout(syncPlaylistScroll, 0);
+	queuePlaylistScroll();
 }
 
 function togglePlaylist() {
 	rightPanelMode = rightPanelMode === "playlist" ? "tools" : "playlist";
 	if (rightPanelMode === "playlist") {
-		setTimeout(syncPlaylistScroll, 0);
+		queuePlaylistScroll();
 	}
 }
 
@@ -259,7 +298,10 @@ function syncState() {
 	durationStr = state.durationStr;
 	progress = state.progress;
 	initialized = state.initialized;
-	setTimeout(syncPlaylistScroll, 0);
+	isLoading = state.initializing;
+	errorMessage = state.error || "";
+	audioDuration = state.duration;
+	queuePlaylistScroll();
 }
 
 function onInit() {
@@ -272,7 +314,9 @@ function onTrack(e: CustomEvent) {
 	progress = 0;
 	currentTimeStr = "0:00";
 	durationStr = "0:00";
-	setTimeout(syncPlaylistScroll, 0);
+	audioDuration = 0;
+	errorMessage = "";
+	queuePlaylistScroll();
 }
 
 function onPlayState(e: CustomEvent) {
@@ -284,6 +328,7 @@ function onTime(e: CustomEvent) {
 	currentTimeStr = e.detail.currentTimeStr;
 	durationStr = e.detail.durationStr;
 	progress = e.detail.progress;
+	audioDuration = e.detail.duration;
 }
 
 function onVolume(e: CustomEvent) {
@@ -296,25 +341,48 @@ function onMode(e: CustomEvent) {
 	playMode = e.detail.playMode;
 }
 
+function onError(event: CustomEvent<{ message?: string }>) {
+	syncState();
+	errorMessage = event.detail.message || i18n(I18nKey.musicError);
+	isPlaying = false;
+}
+
 onMount(() => {
-	const mgr = window.__fireflyMusic;
-	if (mgr && !mgr.getState().initialized) {
-		mgr.init();
-	}
-
-	setTimeout(syncState, 100);
-
 	window.addEventListener("fm:init", onInit);
+	window.addEventListener("fm:loading", syncState);
+	window.addEventListener("fm:error", onError as EventListener);
 	window.addEventListener("fm:track", onTrack as EventListener);
 	window.addEventListener("fm:play-state", onPlayState as EventListener);
 	window.addEventListener("fm:time", onTime as EventListener);
 	window.addEventListener("fm:volume", onVolume as EventListener);
 	window.addEventListener("fm:mode", onMode as EventListener);
+	let isMounted = true;
+	const waitForManager = () => {
+		if (!isMounted) return;
+		const mgr = window.__fireflyMusic;
+		if (!mgr) {
+			managerTimer = setTimeout(waitForManager, 100);
+			return;
+		}
+		syncState();
+		const state = mgr.getState();
+		if (!state.initialized && !state.initializing && !state.error) {
+			void mgr.init();
+		}
+	};
+	waitForManager();
+	return () => {
+		isMounted = false;
+		clearTimeout(managerTimer);
+	};
 });
 
 onDestroy(() => {
 	clearTimeout(modeHintTimer);
+	clearTimeout(syncTimer);
 	window.removeEventListener("fm:init", onInit);
+	window.removeEventListener("fm:loading", syncState);
+	window.removeEventListener("fm:error", onError as EventListener);
 	window.removeEventListener("fm:track", onTrack as EventListener);
 	window.removeEventListener("fm:play-state", onPlayState as EventListener);
 	window.removeEventListener("fm:time", onTime as EventListener);
@@ -334,16 +402,27 @@ onDestroy(() => {
 	</div>
 	{#if rightPanelMode === "tools"}
 		<section class="music-visualizer__card" aria-label={i18n(I18nKey.musicPlayerLabel)}>
+			{#if statusText}
+				<div class="music-visualizer__player-status" role="status" aria-busy={isLoading}>
+					<p>{statusText}</p>
+					{#if errorMessage && !initialized && !isLoading}
+						<button type="button" class="music-visualizer__playlist-back music-visualizer__playlist-back--retry" onclick={retryLoad}>
+							{i18n(I18nKey.musicRetry)}
+						</button>
+					{/if}
+				</div>
+			{/if}
 			<!-- 层 1 · 胶片旋转动效（点击跳转歌单） -->
 			<button
 				type="button"
 				class="music-visualizer__record"
 				class:music-visualizer__record--playing={isPlaying}
-				class:music-visualizer__record--loading={!initialized}
+				class:music-visualizer__record--loading={isLoading}
 				onclick={openPlaylist}
 				title={i18n(I18nKey.viewPlaylist)}
 				aria-label={i18n(I18nKey.viewPlaylist)}
 				aria-controls="music-visualizer-playlist-panel"
+				aria-expanded={rightPanelMode === "playlist"}
 			>
 				<span class="music-visualizer__record-disc-shell" aria-hidden="true">
 					<span class="music-visualizer__record-disc">
@@ -401,10 +480,11 @@ onDestroy(() => {
 					onpointermove={onProgressPointerMove}
 					onpointerup={onProgressPointerUp}
 					onpointercancel={onProgressPointerUp}
+					onkeydown={onProgressKeyDown}
 					onmouseenter={() => (progressTrackHover = true)}
 					onmouseleave={() => (progressTrackHover = false)}
 					role="slider"
-					tabindex="0"
+					tabindex={progressDisabled ? -1 : 0}
 					aria-label={i18n(I18nKey.musicProgress)}
 					aria-valuemin="0"
 					aria-valuemax="100"
@@ -439,6 +519,7 @@ onDestroy(() => {
 						onclick={cycleMode}
 						title={MODE_LABELS[playMode]}
 						aria-label={MODE_LABELS[playMode]}
+						disabled={transportDisabled}
 					>
 						{#if playMode === 0}
 							<Icon icon="material-symbols:repeat-rounded" size="lg" />
@@ -456,6 +537,7 @@ onDestroy(() => {
 					onclick={playPrev}
 					title={i18n(I18nKey.musicPrev)}
 					aria-label={i18n(I18nKey.musicPrev)}
+					disabled={transportDisabled}
 				>
 					<Icon icon="material-symbols:skip-previous-rounded" size="xl" />
 				</button>
@@ -466,6 +548,7 @@ onDestroy(() => {
 					onclick={togglePlay}
 					title={isPlaying ? i18n(I18nKey.musicPause) : i18n(I18nKey.musicPlay)}
 					aria-label={isPlaying ? i18n(I18nKey.musicPause) : i18n(I18nKey.musicPlay)}
+					disabled={transportDisabled}
 				>
 					{#if isPlaying}
 						<Icon icon="material-symbols:pause-rounded" size="2xl" />
@@ -480,6 +563,7 @@ onDestroy(() => {
 					onclick={playNext}
 					title={i18n(I18nKey.musicNext)}
 					aria-label={i18n(I18nKey.musicNext)}
+					disabled={transportDisabled}
 				>
 					<Icon icon="material-symbols:skip-next-rounded" size="xl" />
 				</button>
@@ -500,6 +584,7 @@ onDestroy(() => {
 							onpointermove={onVolumeVPointerMove}
 							onpointerup={onVolumeVPointerUp}
 							onpointercancel={onVolumeVPointerUp}
+							onkeydown={onVolumeKeyDown}
 							role="slider"
 							tabindex="0"
 							aria-label={i18n(I18nKey.musicVolume)}
@@ -542,6 +627,7 @@ onDestroy(() => {
 					onclick={togglePlay}
 					title={isPlaying ? i18n(I18nKey.musicPause) : i18n(I18nKey.musicPlay)}
 					aria-label={isPlaying ? i18n(I18nKey.musicPause) : i18n(I18nKey.musicPlay)}
+					disabled={transportDisabled}
 				>
 					{#if isPlaying}
 						<Icon icon="material-symbols:pause-rounded" size="lg" />
@@ -556,6 +642,7 @@ onDestroy(() => {
 					onclick={cycleMode}
 					title={i18n(I18nKey.musicPlayMode)}
 					aria-label={i18n(I18nKey.musicPlayMode)}
+					disabled={transportDisabled}
 				>
 					{#if playMode === 0}
 						<Icon icon="material-symbols:repeat-rounded" size="md" />
@@ -620,23 +707,29 @@ onDestroy(() => {
 					</button>
 				</div>
 
-				<div
+				<ul
 					bind:this={playlistListEl}
 					class="music-visualizer__playlist-list"
-					role="listbox"
 					aria-label={i18n(I18nKey.currentPlaylist)}
 				>
 					{#if playlist.length === 0}
-						<div class="music-visualizer__playlist-empty">{i18n(I18nKey.playlistLoading)}</div>
+						<li class="music-visualizer__playlist-empty" role="status" aria-busy={isLoading}>
+							<p>{statusText || i18n(I18nKey.musicNoSongs)}</p>
+							{#if errorMessage && !isLoading}
+								<button type="button" class="music-visualizer__playlist-back music-visualizer__playlist-back--retry" onclick={retryLoad}>
+									{i18n(I18nKey.musicRetry)}
+								</button>
+							{/if}
+						</li>
 					{:else}
 						{#each playlist as track, i}
+							<li>
 							<button
 								type="button"
 								class="music-visualizer__playlist-item"
 								class:music-visualizer__playlist-item--active={i === currentIndex}
 								onclick={() => playTrack(i)}
-								role="option"
-								aria-selected={i === currentIndex}
+								aria-current={i === currentIndex ? "true" : undefined}
 								title={`${track.name} - ${track.artist}`}
 							>
 								<div class="music-visualizer__playlist-cover">
@@ -660,9 +753,10 @@ onDestroy(() => {
 									</div>
 								{/if}
 							</button>
+							</li>
 						{/each}
 					{/if}
-				</div>
+				</ul>
 			</div>
 		</aside>
 	{/if}
@@ -677,6 +771,7 @@ onDestroy(() => {
 			onclick={playPrev}
 			title={i18n(I18nKey.musicPrev)}
 			aria-label={i18n(I18nKey.musicPrev)}
+			disabled={transportDisabled}
 		>
 			<Icon icon="material-symbols:skip-previous-rounded" size="xl" />
 		</button>
@@ -691,11 +786,14 @@ onDestroy(() => {
 				onpointermove={onProgressPointerMove}
 				onpointerup={onProgressPointerUp}
 				onpointercancel={onProgressPointerUp}
+				onkeydown={onProgressKeyDown}
 				role="slider"
+				tabindex={progressDisabled ? -1 : 0}
 				aria-label={i18n(I18nKey.musicProgress)}
 				aria-valuemin="0"
 				aria-valuemax="100"
 				aria-valuenow={Math.round(progress)}
+				aria-disabled={progressDisabled}
 			>
 				<div class="music-visualizer__timeline-rail"></div>
 				<div
@@ -716,6 +814,7 @@ onDestroy(() => {
 			onclick={playNext}
 			title={i18n(I18nKey.musicNext)}
 			aria-label={i18n(I18nKey.musicNext)}
+			disabled={transportDisabled}
 		>
 			<Icon icon="material-symbols:skip-next-rounded" size="xl" />
 		</button>

@@ -8,6 +8,21 @@
 	display: none;
 }
 
+.home-mobile-stats-link {
+	align-self: center;
+	display: inline-flex;
+	align-items: center;
+	min-height: var(--control-size);
+	padding: var(--space-2) var(--space-3);
+	border: 1px solid var(--line-divider);
+	border-radius: var(--radius-medium);
+	background: var(--article-surface-bg);
+	color: var(--link-color);
+}
+
+.home-mobile-stats-link:hover { background: var(--btn-regular-bg-hover); }
+.home-mobile-stats-link:focus-visible { outline: 2px solid var(--primary); outline-offset: var(--space-1); }
+
 @media (max-width: 768px) {
 	.home-mobile {
 		display: block;

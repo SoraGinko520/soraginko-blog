@@ -2,81 +2,88 @@
 import HeroContact from "@components/layout/HeroContact.astro";
 import HeroDialogue from "@components/layout/HeroDialogue.astro";
 import HeroMosaic from "@components/layout/HeroMosaic.astro";
-import HeroQuickActions from "@components/layout/HeroQuickActions.astro";
 import { homeConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
 
 const { hero } = homeConfig;
+// 桌面首屏使用角色署名，不改变全站作者名或移动端身份。
+const characterName = "Shirayukihime";
+const occupation = (homeConfig.occupation || "")
+	.replace(/^\[/, "【")
+	.replace(/\]$/, "】");
+const blogTitle = `${homeConfig.name}的博客`;
 const dialogueEnabled =
 	hero.dialogue?.enabled !== false && Boolean(hero.dialogue);
 const runtimeConfig = {
 	mosaic: hero.mosaic,
+	artwork: hero.artwork,
 	rain: {
 		enabled: hero.rain?.enabled ?? true,
 		intensity: hero.rain?.intensity ?? 0.6,
 		color: hero.rain?.color ?? "",
 	},
 };
+const artworkStyle = [
+	`--home-hero-art-position-x: ${hero.artwork.positionX * 100}%`,
+	`--home-hero-art-position-y: ${hero.artwork.positionY * 100}%`,
+	`--home-hero-art-aspect: ${hero.artwork.width / hero.artwork.height}`,
+	`--home-hero-art-width: ${hero.artwork.width}px`,
+	`--home-hero-art-height: ${hero.artwork.height}px`,
+	`--home-hero-art-align-x: ${hero.artwork.positionX}`,
+	`--home-hero-art-align-y: ${hero.artwork.positionY}`,
+].join(";");
 ---
 
 <section
 	class="home-hero"
 	id="home-hero"
 	data-home-hero
+	data-signature-paused="true"
 	data-hero-config={JSON.stringify(runtimeConfig)}
+	style={artworkStyle}
 >
 	<HeroMosaic
 		desktopImage={hero.backgroundImage}
 		mobileImage={hero.backgroundImage}
 		config={hero.mosaic}
+		artwork={hero.artwork}
 	/>
 
 	<div class="home-hero__shade" aria-hidden="true"></div>
+	<div class="home-hero__opening" data-hero-opening aria-hidden="true"></div>
 
 	<header class="home-hero__identity" data-hero-title>
-		<svg class="home-hero__filter" aria-hidden="true" focusable="false">
-			<defs>
-				<filter
-					id="home-hero-gooey"
-					x="-20%"
-					y="-30%"
-					width="140%"
-					height="160%"
-					color-interpolation-filters="sRGB"
-				>
-					<feMorphology operator="dilate" radius="0.8" in="SourceGraphic" result="dilate" />
-					<feGaussianBlur in="dilate" stdDeviation="2.2" result="blur" />
-					<feColorMatrix
-						in="blur"
-						type="matrix"
-						values="1 0 0 0 0  0 1 0 0 0  0 0 1 0 0  0 0 0 19 -9"
-						result="goo"
-					/>
-					<feComposite in="SourceGraphic" in2="goo" operator="atop" />
-				</filter>
-			</defs>
-		</svg>
-		<h1 class="home-hero__title">
-			<span>{homeConfig.displayName || homeConfig.name}</span>
-				<span class="sr-only">{i18n(I18nKey.techBlogSuffix)}</span>
-		</h1>
-		{homeConfig.occupation && (
-			<p class="home-hero__occupation">{homeConfig.occupation}</p>
+		{occupation && (
+			<p class="home-hero__occupation"><span>{occupation}</span></p>
 		)}
+		<h1 class="home-hero__title">
+			<span class="home-hero__title-name" aria-hidden="true">
+				<span class="home-hero__title-word">{characterName}</span>
+			</span>
+			<span class="sr-only">{characterName}{ i18n(I18nKey.techBlogSuffix) }</span>
+		</h1>
+		<button class="home-hero__name-badge" type="button" data-dialogue-restore aria-controls="hero-dialogue">
+			<span class="home-hero__name-badge-text">{blogTitle}</span>
+		</button>
 	</header>
 
 	{hero.contact && <HeroContact contact={hero.contact} />}
 
-	<HeroQuickActions />
+	<div class="home-hero__interaction">
+		{dialogueEnabled && hero.dialogue && (
+			<HeroDialogue
+				config={hero.dialogue}
+				sticker={hero.sticker}
+				authorAvatarImage={hero.authorAvatarImage}
+				fallbackHostName={homeConfig.displayName || homeConfig.name}
+			/>
+		)}
+	</div>
 
-	{dialogueEnabled && hero.dialogue && (
-		<HeroDialogue
-			config={hero.dialogue}
-			sticker={hero.sticker}
-			fallbackHostName={homeConfig.displayName || homeConfig.name}
-		/>
-	)}
+	<noscript>
+		<span class="home-hero__static" hidden></span>
+	</noscript>
 
 	<canvas class="home-hero__rain" data-hero-rain aria-hidden="true"></canvas>
 </section>

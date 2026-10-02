@@ -17,7 +17,12 @@ const buildNavBarConfig = (): NavBarConfig => {
 			name: i18n(I18nKey.aboutMe),
 		});
 	}
-	if (siteConfig.pages.guestbook) aboutChildren.push(LinkPreset.Guestbook);
+	if (siteConfig.pages.music) aboutChildren.push(LinkPreset.Music);
+
+	const socialChildren: (NavBarLink | LinkPreset)[] = [];
+	if (siteConfig.pages.friends) socialChildren.push(LinkPreset.Friends);
+	if (siteConfig.pages.fcircle) socialChildren.push(LinkPreset.Fcircle);
+	if (siteConfig.pages.guestbook) socialChildren.push(LinkPreset.Guestbook);
 
 	const links: (NavBarLink | LinkPreset)[] = [LinkPreset.Home];
 	if (siteConfig.pages.collections) links.push(LinkPreset.NavLinks);
@@ -28,7 +33,14 @@ const buildNavBarConfig = (): NavBarConfig => {
 			children: postsChildren,
 		});
 	}
+	if (siteConfig.pages.projects) links.push(LinkPreset.Projects);
 	if (siteConfig.pages.life) links.push(LinkPreset.Life);
+	if (socialChildren.length > 0) {
+		links.push({
+			...LinkPresets[LinkPreset.Social],
+			children: socialChildren,
+		});
+	}
 	if (aboutChildren.length > 0) {
 		links.push({ ...LinkPresets[LinkPreset.About], children: aboutChildren });
 	}

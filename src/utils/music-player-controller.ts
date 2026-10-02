@@ -44,6 +44,7 @@ const BAR_COLLAPSE_DELAY = 160;
 const LYRICS_SCROLL_RESUME_DELAY = 3000;
 const PLAYLIST_BATCH_SIZE = 30;
 const PILL_LYRICS_STORAGE_KEY = "music-pill-lyrics";
+const SLIDER_KEYBOARD_STEP = 0.05;
 
 export function setupMusicPlayerWidget(): void {
 	const rootElement = document.querySelector<WidgetElement>(
@@ -59,12 +60,19 @@ export function setupMusicPlayerWidget(): void {
 
 	const $ = <T extends HTMLElement = HTMLElement>(selector: string): T | null =>
 		root.querySelector<T>(selector);
+	const itemTemplateElement = document.getElementById(
+		"music-player-item-template",
+	);
 
 	const ui = {
 		disc: $(".music-player__disc"),
+		panel: $(".music-player__panel"),
+		info: $(".music-player__info"),
+		toolbar: $(".music-player__toolbar"),
 		discImg: $<HTMLImageElement>(".music-player__disc-img"),
 		title: $(".music-player__title"),
 		artist: $(".music-player__artist"),
+		error: $(".music-player__error"),
 		timeCurrent: $(".music-player__time-current"),
 		timeTotal: $(".music-player__time-total"),
 		progress: $(".music-player__progress"),
@@ -98,9 +106,10 @@ export function setupMusicPlayerWidget(): void {
 		playlistView: $(".music-player__playlist-view"),
 		lyricsView: $(".music-player__lyrics-view"),
 		lyricsList: $(".music-player__lyrics-list"),
-		itemTemplate: document.getElementById(
-			"music-player-item-template",
-		) as HTMLTemplateElement | null,
+		itemTemplate:
+			itemTemplateElement instanceof HTMLTemplateElement
+				? itemTemplateElement
+				: null,
 	};
 
 	const critical: (Element | null)[] = [
@@ -144,8 +153,23 @@ export function setupMusicPlayerWidget(): void {
 
 	// ── 形态机 ───────────────────────────────────────────────
 	function setShape(next: WidgetShape): void {
+		if (next !== "bar") {
+			setPanelOpen(false);
+			if (
+				root.contains(document.activeElement) &&
+				document.activeElement !== ui.disc
+			) {
+				ui.disc?.focus({ preventScroll: true });
+			}
+		}
 		shape = next;
 		root.dataset.state = next;
+		ui.disc?.setAttribute("aria-expanded", String(next === "bar"));
+		for (const section of [ui.info, ui.toolbar]) {
+			if (!section) continue;
+			section.inert = next !== "bar";
+			section.setAttribute("aria-hidden", String(next !== "bar"));
+		}
 	}
 
 	function clearCollapseTimer(): void {
@@ -164,7 +188,14 @@ export function setupMusicPlayerWidget(): void {
 		clearCollapseTimer();
 		collapseTimer = window.setTimeout(() => {
 			collapseTimer = null;
-			if (hovering || !isPlaying || shape !== "bar" || panelOpen) return;
+			if (
+				hovering ||
+				root.contains(document.activeElement) ||
+				!isPlaying ||
+				shape !== "bar" ||
+				panelOpen
+			)
+				return;
 			setShape(playingRestingShape());
 		}, BAR_COLLAPSE_DELAY);
 	}
@@ -197,18 +228,38 @@ export function setupMusicPlayerWidget(): void {
 		ui.tabLyrics?.classList.toggle("is-active", tab === "lyrics");
 		ui.playlistView?.classList.toggle("is-active", tab === "playlist");
 		ui.lyricsView?.classList.toggle("is-active", tab === "lyrics");
+		ui.tabPlaylist?.setAttribute("aria-pressed", String(tab === "playlist"));
+		ui.tabLyrics?.setAttribute("aria-pressed", String(tab === "lyrics"));
+		for (const [view, active] of [
+			[ui.playlistView, tab === "playlist"],
+			[ui.lyricsView, tab === "lyrics"],
+		] satisfies [HTMLElement | null, boolean][]) {
+			if (!view) continue;
+			view.inert = !active;
+			view.setAttribute("aria-hidden", String(!active));
+		}
 	}
 
 	function setPanelOpen(open: boolean): void {
+		if (open && shape !== "bar") setShape("bar");
+		if (!open && ui.panel?.contains(document.activeElement)) {
+			ui.btnPlaylist?.focus({ preventScroll: true });
+		}
 		panelOpen = open;
 		root.dataset.panel = open ? "open" : "closed";
 		ui.btnPlaylist?.classList.toggle("is-active", open);
+		ui.btnPlaylist?.setAttribute("aria-expanded", String(open));
+		if (ui.panel) {
+			ui.panel.inert = !open;
+			ui.panel.setAttribute("aria-hidden", String(!open));
+		}
 		if (open) setPanelTab("playlist");
 	}
 
 	// ── UI 更新 ──────────────────────────────────────────────
 	function setLoading(visible: boolean): void {
 		root.classList.toggle("is-loading", visible);
+		root.setAttribute("aria-busy", String(visible));
 	}
 
 	function ensureInit(): void {
@@ -220,15 +271,28 @@ export function setupMusicPlayerWidget(): void {
 	function updatePlayIcons(playing: boolean): void {
 		ui.iconPlay?.classList.toggle("hidden", playing);
 		ui.iconPause?.classList.toggle("hidden", !playing);
-		const label = playing ? i18n(I18nKey.musicPause) : i18n(I18nKey.musicPlay);
+		const label = playing
+			? i18n(I18nKey.musicPause)
+			: mgr.getState().error
+				? i18n(I18nKey.retry)
+				: i18n(I18nKey.musicPlay);
 		ui.btnPlay?.setAttribute("aria-label", label);
 		ui.btnPlay?.setAttribute("data-tooltip", label);
+	}
+
+	function updateError(message: string | null): void {
+		if (ui.error) {
+			ui.error.textContent = message ?? "";
+			ui.error.hidden = !message;
+		}
+		updatePlayIcons(isPlaying);
 	}
 
 	function applyPlayState(playing: boolean): void {
 		isPlaying = playing;
 		root.dataset.playing = playing ? "true" : "false";
 		updatePlayIcons(playing);
+		updateError(mgr.getState().error);
 		if (!playing) {
 			clearCollapseTimer();
 			if (shape === "pill") setShape("bar");
@@ -275,12 +339,21 @@ export function setupMusicPlayerWidget(): void {
 		if (ui.progressBar) ui.progressBar.style.width = `${progress}%`;
 		if (ui.progressThumb) ui.progressThumb.style.left = `${progress}%`;
 		ui.progress?.setAttribute("aria-valuenow", Math.round(progress).toString());
+		ui.progress?.setAttribute(
+			"aria-valuetext",
+			`${currentTimeStr} / ${durationStr}`,
+		);
+		ui.progress?.setAttribute(
+			"aria-disabled",
+			String(mgr.getState().duration <= 0),
+		);
 		if (ui.timeCurrent) ui.timeCurrent.textContent = currentTimeStr;
 		if (ui.timeTotal) ui.timeTotal.textContent = durationStr;
 	}
 
 	function updateTrackUI(track: TrackInfo | null): void {
 		currentTrack = track;
+		updateError(mgr.getState().error);
 		if (!track) return;
 		if (ui.title) {
 			ui.title.textContent = track.name;
@@ -363,7 +436,8 @@ export function setupMusicPlayerWidget(): void {
 		const actualEnd = Math.min(end, playlistData.length);
 		for (let idx = start; idx < actualEnd; idx += 1) {
 			const track = playlistData[idx];
-			const clone = template.content.cloneNode(true) as DocumentFragment;
+			const clone = template.content.cloneNode(true);
+			if (!(clone instanceof DocumentFragment)) continue;
 			const itemEl = clone.querySelector<HTMLElement>(".music-player__track");
 			const img = clone.querySelector<HTMLImageElement>(
 				".music-player__track-cover",
@@ -417,8 +491,15 @@ export function setupMusicPlayerWidget(): void {
 	function renderPlaylist(playlist: TrackInfo[], currentIndex: number): void {
 		playlistData = playlist;
 		playlistRenderedCount = 0;
-		if (ui.playlistList) ui.playlistList.innerHTML = "";
-		if (playlist.length > 0) appendPlaylistBatch(0, PLAYLIST_BATCH_SIZE);
+		ui.playlistList?.replaceChildren();
+		if (playlist.length > 0) {
+			appendPlaylistBatch(0, PLAYLIST_BATCH_SIZE);
+		} else if (ui.playlistList) {
+			const placeholder = document.createElement("li");
+			placeholder.className = "music-player__lyrics-placeholder";
+			placeholder.textContent = i18n(I18nKey.musicNoSongs);
+			ui.playlistList.appendChild(placeholder);
+		}
 		updatePlaylistActiveUI(currentIndex);
 	}
 
@@ -446,9 +527,9 @@ export function setupMusicPlayerWidget(): void {
 	function renderLyricsUI(lyrics: LyricLine[], status: string): void {
 		const list = ui.lyricsList;
 		if (!list) return;
-		list.innerHTML = "";
+		list.replaceChildren();
 		const placeholder = (text: string): void => {
-			const el = document.createElement("div");
+			const el = document.createElement("li");
 			el.className = "music-player__lyrics-placeholder";
 			el.textContent = text;
 			list.appendChild(el);
@@ -466,11 +547,12 @@ export function setupMusicPlayerWidget(): void {
 			return;
 		}
 		lyrics.forEach((line, index) => {
-			const lineEl = document.createElement("div");
+			const item = document.createElement("li");
+			const lineEl = document.createElement("button");
+			lineEl.type = "button";
 			lineEl.className = "music-player__lrc-line";
 			lineEl.textContent = line.text;
 			lineEl.dataset.index = index.toString();
-			lineEl.setAttribute("role", "option");
 			lineEl.addEventListener(
 				"click",
 				() => {
@@ -478,7 +560,8 @@ export function setupMusicPlayerWidget(): void {
 				},
 				{ signal },
 			);
-			list.appendChild(lineEl);
+			item.appendChild(lineEl);
+			list.appendChild(item);
 		});
 		updateLrcHighlight(currentLrcIndex, true);
 	}
@@ -492,15 +575,27 @@ export function setupMusicPlayerWidget(): void {
 			.querySelectorAll<HTMLElement>(".music-player__lrc-line")
 			.forEach((line, i) => {
 				line.classList.toggle("is-active", i === index);
+				if (i === index) line.setAttribute("aria-current", "true");
+				else line.removeAttribute("aria-current");
 			});
-		if (index !== -1 && !isUserScrollingLyrics) {
+		if (
+			index !== -1 &&
+			!isUserScrollingLyrics &&
+			!list.contains(document.activeElement)
+		) {
 			const line = list.querySelector<HTMLElement>(
 				`.music-player__lrc-line[data-index="${index}"]`,
 			);
 			if (line) {
 				const target =
 					line.offsetTop - list.clientHeight / 2 + line.offsetHeight / 2;
-				list.scrollTo({ top: target, behavior: "smooth" });
+				list.scrollTo({
+					top: target,
+					behavior: window.matchMedia("(prefers-reduced-motion: reduce)")
+						.matches
+						? "auto"
+						: "smooth",
+				});
 			}
 		}
 	}
@@ -517,16 +612,18 @@ export function setupMusicPlayerWidget(): void {
 	// ── 全量同步（late-mount / Swup 导航后 resync） ───────────
 	function syncAll(): void {
 		const s = mgr.getState();
-		if (!s.initialized) return;
-		setLoading(false);
+		setLoading(s.initializing);
+		updateError(s.error);
+		if (!s.initialized && !s.error) return;
 		if (s.playlist.length === 0) {
+			renderPlaylist([], 0);
 			if (ui.title)
 				ui.title.textContent = s.error || i18n(I18nKey.musicNoSongs);
 			updatePillText();
 			return;
 		}
-		renderPlaylist(s.playlist as TrackInfo[], s.currentIndex);
-		updateTrackUI((s.track as TrackInfo | null) ?? null);
+		renderPlaylist(s.playlist, s.currentIndex);
+		updateTrackUI(s.track);
 		applyPlayState(s.isPlaying);
 		updateModeUI(s.playMode);
 		updateVolumeUI(s.volume, s.isMuted);
@@ -535,8 +632,8 @@ export function setupMusicPlayerWidget(): void {
 		}
 		currentLrcIndex = s.currentLrcIndex;
 		renderLyricsUI(
-			s.lyrics as LyricLine[],
-			s.lyrics.length > 0 ? "loaded" : "none",
+			s.lyrics,
+			s.lyricsStatus ?? (s.lyrics.length > 0 ? "loaded" : "none"),
 		);
 		updatePillText();
 	}
@@ -560,9 +657,14 @@ export function setupMusicPlayerWidget(): void {
 			renderPlaylist(d.playlist, 0);
 			updateModeUI(d.playMode);
 			updateVolumeUI(d.volume, d.isMuted);
-		} else if (ui.title) {
-			ui.title.textContent = i18n(I18nKey.musicNoSongs);
+		} else {
+			renderPlaylist([], 0);
+			if (ui.title) ui.title.textContent = i18n(I18nKey.musicNoSongs);
 		}
+	});
+	on<{ initializing: boolean }>("fm:loading", (d) => {
+		setLoading(d.initializing);
+		updateError(mgr.getState().error);
 	});
 
 	on<{ index: number; track: TrackInfo }>("fm:track", (d) => {
@@ -601,7 +703,7 @@ export function setupMusicPlayerWidget(): void {
 
 	on<{ message: string }>("fm:error", (d) => {
 		setLoading(false);
-		if (ui.title) ui.title.textContent = d.message || i18n(I18nKey.musicError);
+		updateError(d.message || i18n(I18nKey.musicError));
 		updatePillText();
 	});
 
@@ -616,10 +718,12 @@ export function setupMusicPlayerWidget(): void {
 		track.addEventListener(
 			"pointerdown",
 			(event) => {
+				if (track.getAttribute("aria-disabled") === "true") return;
 				event.preventDefault();
+				track.focus({ preventScroll: true });
+				const rect = track.getBoundingClientRect();
 				track.setPointerCapture(event.pointerId);
 				const apply = (clientX: number, clientY: number): number => {
-					const rect = track.getBoundingClientRect();
 					// 垂直轴：底部为 0、顶部为 1，取纵向反比
 					const ratio = vertical
 						? 1 - Math.min(1, Math.max(0, (clientY - rect.top) / rect.height))
@@ -635,11 +739,50 @@ export function setupMusicPlayerWidget(): void {
 					track.removeEventListener("pointermove", move);
 					track.removeEventListener("pointerup", up);
 					track.removeEventListener("pointercancel", up);
+					if (track.hasPointerCapture(upEvent.pointerId)) {
+						track.releasePointerCapture(upEvent.pointerId);
+					}
 					onCommit?.(apply(upEvent.clientX, upEvent.clientY));
 				};
 				track.addEventListener("pointermove", move);
 				track.addEventListener("pointerup", up);
 				track.addEventListener("pointercancel", up);
+			},
+			{ signal },
+		);
+	}
+
+	function bindSliderKeyboard(
+		track: HTMLElement | null,
+		readRatio: () => number,
+		applyRatio: (ratio: number) => void,
+	): void {
+		track?.addEventListener(
+			"keydown",
+			(event) => {
+				if (track.getAttribute("aria-disabled") === "true") return;
+				const ratio = readRatio();
+				let nextRatio: number;
+				switch (event.key) {
+					case "ArrowRight":
+					case "ArrowUp":
+						nextRatio = ratio + SLIDER_KEYBOARD_STEP;
+						break;
+					case "ArrowLeft":
+					case "ArrowDown":
+						nextRatio = ratio - SLIDER_KEYBOARD_STEP;
+						break;
+					case "Home":
+						nextRatio = 0;
+						break;
+					case "End":
+						nextRatio = 1;
+						break;
+					default:
+						return;
+				}
+				event.preventDefault();
+				applyRatio(Math.max(0, Math.min(1, nextRatio)));
 			},
 			{ signal },
 		);
@@ -670,6 +813,16 @@ export function setupMusicPlayerWidget(): void {
 		},
 		undefined,
 		true,
+	);
+	bindSliderKeyboard(
+		ui.progress,
+		() => mgr.getState().progress / 100,
+		(ratio) => mgr.seek(ratio),
+	);
+	bindSliderKeyboard(
+		ui.volumeTrack,
+		() => mgr.getState().volume,
+		(ratio) => mgr.setVolume(ratio),
 	);
 
 	// ── 按钮与交互 ───────────────────────────────────────────
@@ -733,6 +886,23 @@ export function setupMusicPlayerWidget(): void {
 
 	root.addEventListener("pointerenter", onPointerEnter, { signal });
 	root.addEventListener("pointerleave", onPointerLeave, { signal });
+	root.addEventListener("focusin", clearCollapseTimer, { signal });
+	root.addEventListener("focusout", () => scheduleBarCollapse(), { signal });
+	root.addEventListener(
+		"keydown",
+		(event) => {
+			if (event.key !== "Escape") return;
+			event.preventDefault();
+			if (panelOpen) {
+				setPanelOpen(false);
+				ui.btnPlaylist?.focus({ preventScroll: true });
+			} else {
+				setShape(isPlaying ? playingRestingShape() : "disc");
+				ui.disc?.focus({ preventScroll: true });
+			}
+		},
+		{ signal },
+	);
 	ui.playlistList?.addEventListener("scroll", onPlaylistScroll, {
 		passive: true,
 		signal,
@@ -762,6 +932,12 @@ export function setupMusicPlayerWidget(): void {
 	root.dataset.state = shape;
 	root.dataset.panel = "closed";
 	root.dataset.playing = "false";
+	ui.progress?.setAttribute(
+		"aria-disabled",
+		String(mgr.getState().duration <= 0),
+	);
+	setShape(shape);
+	setPanelTab("playlist");
 	updatePillLyricsButton();
-	if (mgr.getState().initialized) syncAll();
+	syncAll();
 }

@@ -1,0 +1,305 @@
+/* 列表、详情与首页精选共用现有云白／墨蓝令牌，无额外动画运行时。 */
+.projects-page,
+.project-detail,
+.home-featured-projects {
+	min-width: 0;
+	color: var(--deep-text);
+}
+
+.projects-page > .page-title,
+.project-detail > .page-title {
+	margin-bottom: var(--space-8);
+}
+
+.projects-controls,
+.project-detail__summary {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-4);
+	margin-bottom: var(--space-5);
+}
+
+.projects-search {
+	flex: 1 1 100%;
+	min-width: 0;
+}
+
+.projects-search input {
+	width: 100%;
+	min-height: var(--control-size);
+	padding: var(--space-3) var(--space-4);
+	border: 1px solid var(--line-divider);
+	border-radius: var(--radius-medium);
+	background: var(--article-surface-bg);
+	color: var(--deep-text);
+	font: inherit;
+}
+
+.projects-search input::placeholder {
+	color: var(--content-meta);
+	opacity: 1;
+}
+
+.projects-filters,
+.project-card__tags,
+.project-card__links {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-2);
+}
+
+.projects-filter {
+	min-height: var(--control-size);
+	padding: var(--space-2) var(--space-4);
+	border: 1px solid var(--line-divider);
+	border-radius: var(--radius-full);
+	background: var(--article-surface-bg);
+	color: var(--deep-text);
+	font: inherit;
+	cursor: pointer;
+}
+
+.projects-filter:hover,
+.project-link:hover {
+	background: var(--btn-regular-bg-hover);
+}
+
+.projects-filter[aria-pressed="true"] {
+	border-color: var(--primary);
+	background: var(--btn-regular-bg-active);
+	color: var(--title-active);
+}
+
+.projects-filter:focus-visible,
+.projects-search input:focus-visible,
+.project-link:focus-visible,
+.project-card__title a:focus-visible {
+	outline: 2px solid var(--primary);
+	outline-offset: var(--space-1);
+}
+
+.projects-count,
+.projects-notice,
+.projects-empty__hint {
+	color: var(--content-meta);
+	margin-bottom: var(--space-4);
+}
+
+.projects-grid {
+	gap: var(--space-5);
+}
+
+.project-card {
+	display: flex;
+	flex-direction: column;
+	min-width: 0;
+	overflow: hidden;
+	border: 1px solid var(--line-divider);
+	border-radius: var(--radius-large);
+	background: var(--article-surface-bg);
+	transition: transform 220ms ease, border-color 220ms ease, box-shadow 220ms ease;
+}
+
+.project-card:hover,
+.project-card:focus-within {
+	transform: translateY(-2px);
+	border-color: var(--primary);
+	box-shadow: var(--surface-shadow-hover);
+}
+
+.project-card__cover {
+	display: block;
+	aspect-ratio: 16 / 9;
+	overflow: hidden;
+	background: var(--btn-regular-bg-hover);
+}
+
+.project-card__image {
+	display: block;
+	width: 100%;
+	height: 100%;
+	object-fit: cover;
+	transition: transform 220ms ease;
+}
+
+.project-card:hover .project-card__image { transform: scale(1.015); }
+
+.project-card__body {
+	display: flex;
+	flex: 1;
+	flex-direction: column;
+	align-items: flex-start;
+	gap: var(--space-3);
+	padding: var(--space-5);
+	min-width: 0;
+}
+
+.project-status,
+.project-card__tags li {
+	padding: var(--space-1) var(--space-2);
+	border-radius: var(--radius-small);
+	background: var(--btn-regular-bg-hover);
+	color: var(--content-meta);
+	font-size: 0.875rem;
+}
+
+.project-status {
+	border: 1px solid var(--line-divider);
+	color: var(--primary);
+}
+
+.project-card__title {
+	width: 100%;
+	font-size: 1.5rem;
+	font-weight: 600;
+	line-height: 1.3;
+	overflow-wrap: anywhere;
+}
+
+.project-card__title a:hover {
+	color: var(--primary);
+}
+
+.project-card__description,
+.project-detail dd {
+	line-height: 1.7;
+	overflow-wrap: anywhere;
+}
+
+.project-card__tags {
+	list-style: none;
+	padding: 0;
+	margin: 0;
+	overflow-wrap: anywhere;
+}
+
+.project-card__meta {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: center;
+	gap: var(--space-3);
+	width: 100%;
+	margin-top: auto;
+	padding-top: var(--space-3);
+	color: var(--content-meta);
+	font-size: 0.875rem;
+}
+
+.project-card__meta dd,
+.project-card__updated {
+	display: flex;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--space-1);
+}
+
+.project-card__meta svg,
+.project-link svg {
+	width: var(--space-4);
+	height: var(--space-4);
+	flex-shrink: 0;
+}
+
+.project-link {
+	display: inline-flex;
+	align-items: center;
+	gap: var(--space-2);
+	min-height: var(--control-size);
+	padding: var(--space-2);
+	border-radius: var(--radius-small);
+	color: var(--link-color);
+	text-decoration: underline;
+	text-underline-offset: var(--space-1);
+	overflow-wrap: anywhere;
+}
+
+.projects-empty {
+	padding: var(--space-8) var(--space-4);
+	text-align: center;
+	border: 1px dashed var(--line-divider);
+	border-radius: var(--radius-large);
+}
+
+.projects-empty p + p {
+	margin-top: var(--space-3);
+}
+
+.projects-empty__hint {
+	margin-bottom: 0;
+}
+
+.home-featured-projects {
+	padding: var(--space-8) var(--space-4);
+}
+
+.home-featured-projects__header {
+	display: flex;
+	justify-content: space-between;
+	align-items: center;
+	flex-wrap: wrap;
+	gap: var(--space-4);
+	margin-bottom: var(--space-5);
+}
+
+.projects-eyebrow {
+	display: block;
+	color: var(--content-meta);
+	font-size: 0.875rem;
+	letter-spacing: 0.1em;
+}
+
+.home-featured-projects__header h2 {
+	font-size: 1.75rem;
+	font-weight: 600;
+}
+
+.project-detail > .project-link {
+	margin-bottom: var(--space-5);
+}
+
+.project-detail__cover {
+	margin-bottom: var(--space-5);
+	overflow: hidden;
+	border-radius: var(--radius-large);
+}
+
+.project-detail__cover .project-card__image {
+	height: auto;
+}
+
+.project-detail__meta {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: var(--space-5);
+	padding: var(--space-5) 0;
+	margin-bottom: var(--space-5);
+	border-top: 1px solid var(--line-divider);
+	border-bottom: 1px solid var(--line-divider);
+}
+
+.project-detail__meta > div {
+	min-width: 0;
+}
+
+.project-detail__meta dt {
+	color: var(--content-meta);
+	font-size: 0.875rem;
+	margin-bottom: var(--space-1);
+}
+
+.projects-page [hidden],
+.projects-grid > [hidden] {
+	display: none;
+}
+
+/* 仓库名可能远长于中文标题；SVG text 不换行，项目页使用同一标题组件的文本层。 */
+.projects-page .page-title__svg,
+.project-detail .page-title__svg { display: none; }
+.projects-page .page-title__measure,
+.project-detail .page-title__measure { visibility: visible; }
+
+@media (prefers-reduced-motion: reduce) {
+	.project-card, .project-card__image { transition: none; transform: none !important; }
+}

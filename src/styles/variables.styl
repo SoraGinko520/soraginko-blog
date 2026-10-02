@@ -11,72 +11,91 @@
   --space-6: 1.5rem
   --space-8: 2rem
   --control-size: 2.75rem
+  /* Hero 的日光插画保持原色；导览区改用可切换的语义化主题令牌。 */
+  --sky-surface: #F6FAFD
+  --sky-surface-end: #EAF3F9
+  --sky-ink: #244D68
+  --sky-muted: #426680
+  --sky-border: #8EACBF
+  --sky-title-start: #4D86AC
+  --sky-title-mid: #4D84A5
+  --sky-title-end: #587B9D
+  --sky-title-size: clamp(1.8rem, 3.25vw, 4.2rem)
+  --sky-occupation-size: clamp(0.75rem, 1vw, 1.05rem)
+  --sky-badge-size: clamp(0.625rem, 0.78vw, 0.8rem)
+  --sky-badge-width: clamp(6.25rem, 8.5vw, 9rem)
+  --sky-guide-title-size: clamp(2.625rem, 4vw, 4.875rem)
+  --sky-art-visits-opacity: 0.56
+  --sky-art-archive-opacity: 0.48
+  --sky-art-visits-filter: brightness(1.06) saturate(0.68) contrast(0.92)
+  --sky-art-archive-filter: brightness(1.08) saturate(0.58) contrast(0.92)
 
-/* ===== 主题相关变量（极简中性灰阶，模拟 x.ai 视觉语言） =====
-   注: 保留 --hue 兼容性，但视觉调色板强制中性化以贯彻"无饱和色块"原则。
-   仅 --primary 保留细微 hue，用于 link/focus 等点缀。 */
+/* ===== 主题相关变量（云白、天空蓝与墨蓝） =====
+   浅色表面呼应插画里的白云与银白衣发，正文与交互使用深蓝保证阅读对比度。
+   保留 --hue 兼容性，局部分类与图谱继续使用既有色相机制。 */
 :root
-  --primary: oklch(0.30 0 0)
-  --page-bg: oklch(1 0 0)
+  --primary: #27658B
+  --page-bg: #F6FAFD
   --card-bg: transparent
   --card-bg-transparent: transparent
-  --article-surface-bg: #F5F5F5
+  --article-surface-bg: #FFFFFF
+  --surface-shadow-hover: 0 0.35rem 1rem rgba(41, 74, 98, 0.10)
 
-  --btn-content: oklch(0.25 0 0)
+  --btn-content: #20384D
   --btn-regular-bg: transparent
-  --btn-regular-bg-hover: oklch(0.94 0 0)
-  --btn-regular-bg-active: oklch(0.90 0 0)
+  --btn-regular-bg-hover: #E7F1F8
+  --btn-regular-bg-active: #D7E8F3
 
-  --btn-plain-bg-hover: oklch(0.94 0 0)
-  --btn-plain-bg-active: oklch(0.90 0 0)
+  --btn-plain-bg-hover: #E7F1F8
+  --btn-plain-bg-active: #D7E8F3
 
-  --btn-card-bg-hover: oklch(0.96 0 0)
-  --btn-card-bg-active: oklch(0.92 0 0)
+  --btn-card-bg-hover: #EEF6FB
+  --btn-card-bg-active: #E1EEF7
 
   --enter-btn-bg: transparent
-  --enter-btn-bg-hover: oklch(0.94 0 0)
-  --enter-btn-bg-active: oklch(0.90 0 0)
+  --enter-btn-bg-hover: var(--btn-regular-bg-hover)
+  --enter-btn-bg-active: var(--btn-regular-bg-active)
 
-  --deep-text: oklch(0.10 0 0)
-  --title-active: oklch(0.30 0 0)
+  --deep-text: #20384D
+  --title-active: #174C70
 
-  --line-divider: oklch(0.85 0 0)
-  --line-color: oklch(0.85 0 0)
-  --meta-divider: oklch(0.75 0 0)
-  --content-meta: oklch(0.45 0 0)
-  --article-pinned-accent: oklch(0.52 0.20 25)
-  --article-title-marker: oklch(0.62 0.16 190)
+  --line-divider: #CEDFEA
+  --line-color: #CEDFEA
+  --meta-divider: #9CB4C7
+  --content-meta: #4C657A
+  --article-pinned-accent: #27658B
+  --article-title-marker: #27658B
   --article-category-lightness: 0.42
-  --article-category-chroma: 0.15
+  --article-category-chroma: 0.09
 
-  --inline-code-bg: oklch(0.95 0 0)
-  --inline-code-color: oklch(0.20 0 0)
-  --strong-color: oklch(0.10 0 0)
-  --selection-bg: oklch(0.85 0 0)
-  --codeblock-bg: oklch(0.97 0 0)
-  --codeblock-topbar-bg: oklch(0.93 0 0)
-  --codeblock-border: oklch(0.85 0 0)
+  --inline-code-bg: #E7F1F8
+  --inline-code-color: #20384D
+  --strong-color: #14283A
+  --selection-bg: #C9E3F3
+  --codeblock-bg: #F0F6FA
+  --codeblock-topbar-bg: #E3EFF7
+  --codeblock-border: #CEDFEA
 
-  --license-block-bg: oklch(0.97 0 0)
+  --license-block-bg: #EEF6FB
 
-  --link-underline: oklch(0.85 0 0)
-  --link-hover: oklch(0.50 0 0)
-  --link-active: oklch(0.30 0 0)
-  --link-color: oklch(0.55 0.10 210)
+  --link-underline: #99BFDA
+  --link-hover: #174C70
+  --link-active: #142F48
+  --link-color: #27658B
 
-  --float-panel-bg: oklch(1 0 0)
-  --music-surface: #DEDEDE
-  --navbar-bg: #E7E7E7
-  --navbar-highlight-bg: #000000
+  --float-panel-bg: #FFFFFF
+  --music-surface: #E3EFF7
+  --navbar-bg: #E7F1F8
+  --navbar-highlight-bg: #20384D
   --navbar-highlight-text: #FFFFFF
 
-  --scrollbar-bg-light: rgba(0, 0, 0, 0.4)
-  --scrollbar-bg-hover-light: rgba(0, 0, 0, 0.5)
-  --scrollbar-bg-active-light: rgba(0, 0, 0, 0.6)
+  --scrollbar-bg-light: rgba(32, 56, 77, 0.4)
+  --scrollbar-bg-hover-light: rgba(32, 56, 77, 0.5)
+  --scrollbar-bg-active-light: rgba(32, 56, 77, 0.6)
 
-  --scrollbar-bg-dark: rgba(255, 255, 255, 0.4)
-  --scrollbar-bg-hover-dark: rgba(255, 255, 255, 0.5)
-  --scrollbar-bg-active-dark: rgba(255, 255, 255, 0.6)
+  --scrollbar-bg-dark: rgba(178, 201, 220, 0.4)
+  --scrollbar-bg-hover-dark: rgba(178, 201, 220, 0.5)
+  --scrollbar-bg-active-dark: rgba(178, 201, 220, 0.6)
 
   --scrollbar-bg: var(--scrollbar-bg-light)
   --scrollbar-bg-hover: var(--scrollbar-bg-hover-light)
@@ -85,34 +104,34 @@
   --display-light-icon: 1
   --display-dark-icon: 0
 
-  --admonitions-color-tip: oklch(0.55 0 0)
-  --admonitions-color-note: oklch(0.55 0 0)
-  --admonitions-color-important: oklch(0.55 0 0)
-  --admonitions-color-warning: oklch(0.55 0 0)
-  --admonitions-color-caution: oklch(0.40 0 0)
+  --admonitions-color-tip: #3F718E
+  --admonitions-color-note: #27658B
+  --admonitions-color-important: #325E80
+  --admonitions-color-warning: #7A6241
+  --admonitions-color-caution: #A84752
 
   --guestbook-panel: transparent
   --guestbook-surface: transparent
-  --guestbook-editor-bg: #F7F7F7
-  --guestbook-editor-text: #171717
-  --guestbook-editor-muted: #666666
-  --guestbook-editor-line: #D6D6D6
-  --guestbook-editor-hover: #EAEAEA
-  --guestbook-focus: #3D3D3D
-  --guestbook-send-bg: #171717
+  --guestbook-editor-bg: #FFFFFF
+  --guestbook-editor-text: #20384D
+  --guestbook-editor-muted: #4C657A
+  --guestbook-editor-line: #BDD2E2
+  --guestbook-editor-hover: #E7F1F8
+  --guestbook-focus: #27658B
+  --guestbook-send-bg: #27658B
   --guestbook-send-text: #FFFFFF
-  --guestbook-link: #22C55E
-  --guestbook-overlay: rgb(0 0 0 / 0.58)
-  --guestbook-bubble: #262626
-  --guestbook-bubble-text: #FFFFFF
-  --guestbook-admin-bubble: #FFFFFF
-  --guestbook-admin-text: #111111
+  --guestbook-link: #27658B
+  --guestbook-overlay: rgb(16 29 42 / 0.58)
+  --guestbook-bubble: #E3EFF7
+  --guestbook-bubble-text: #20384D
+  --guestbook-admin-bubble: #27658B
+  --guestbook-admin-text: #FFFFFF
   --guestbook-muted: var(--content-meta)
   --guestbook-line: var(--line-divider)
-  --guestbook-dock-bg: #E7E7E7
+  --guestbook-dock-bg: #E7F1F8
   --guestbook-danger: var(--admonitions-color-caution)
   --guestbook-success: var(--admonitions-color-tip)
-  --guestbook-waiting: #E5484D
+  --guestbook-waiting: #A84752
   --guestbook-avatar-size: 2.625rem
   --guestbook-chat-max-width: 64rem
   --guestbook-sidebar-width: 18rem
@@ -121,19 +140,19 @@
 
   /* TOC 极简：去 badge 底色、hover 仅细线反相 */
   --toc-badge-bg: transparent
-  --toc-btn-hover: oklch(0.94 0 0)
-  --toc-btn-active: oklch(0.90 0 0)
+  --toc-btn-hover: #E7F1F8
+  --toc-btn-active: #D7E8F3
   --toc-width: 18rem
-  --toc-item-active: oklch(0.20 0 0)
+  --toc-item-active: #20384D
 
-  --color-selection-bar: linear-gradient(to right, oklch(0.20 0 0), oklch(0.50 0 0), oklch(0.80 0 0))
+  --color-selection-bar: linear-gradient(to right, #20384D, #6A9DBC, #D5EAF6)
 
-  /* 标签关系图谱：保持中性画布，仅节点分组使用低饱和色 */
-  --tag-graph-surface: #fafafa
-  --tag-graph-text: #18181b
-  --tag-graph-muted: #52525b
-  --tag-graph-tooltip-bg: rgba(24, 24, 27, 0.94)
-  --tag-graph-tooltip-text: #fafafa
+  /* 标签关系图谱：画布跟随主题，仅节点分组保留低饱和色 */
+  --tag-graph-surface: #FFFFFF
+  --tag-graph-text: #20384D
+  --tag-graph-muted: #4C657A
+  --tag-graph-tooltip-bg: rgba(32, 56, 77, 0.96)
+  --tag-graph-tooltip-text: #F6FAFD
   --tag-graph-tooltip-border: rgba(255, 255, 255, 0.16)
   --tag-graph-node-1: #d84f4b
   --tag-graph-node-2: #3f7cac
@@ -144,71 +163,80 @@
   --tag-graph-node-7: #668f3f
   --tag-graph-node-8: #8a7470
 
-  /* 图谱面板勾选芯片：选中态青色描边，色相与 --article-title-marker 一致 */
-  --graph-chip-checked: oklch(0.55 0.12 190)
+  /* 中天空蓝在云白与墨蓝表面均有清楚的图形对比度，供勾选与导览聚焦使用 */
+  --graph-chip-checked: #5086A8
 
   /* 7 色彩虹渐变（红橙黄绿青蓝紫），用于幽灵徽章文字 */
-  --rainbow-7: linear-gradient(135deg, #FF5252 0%, #FF9800 16%, #FFEB3B 33%, #4CAF50 50%, #00BCD4 66%, #2196F3 83%, #9C27B0 100%)
+  --rainbow-red: #FF5252
+  --rainbow-orange: #FF9800
+  --rainbow-yellow: #FFEB3B
+  --rainbow-green: #4CAF50
+  --rainbow-cyan: #00BCD4
+  --rainbow-blue: #2196F3
+  --rainbow-purple: #9C27B0
+  --rainbow-7: linear-gradient(135deg, var(--rainbow-red) 0%, var(--rainbow-orange) 16%, var(--rainbow-yellow) 33%, var(--rainbow-green) 50%, var(--rainbow-cyan) 66%, var(--rainbow-blue) 83%, var(--rainbow-purple) 100%)
 
 /* 卡片"跟随主题色相"模式被废弃为 no-op */
 :root:not(.dark) body.card-follow-theme-hue
   --card-bg: transparent
 
-/* 暗色主题：Obsidian 式中性灰阶 + 深黑页面锚点，全站暗色一律取值于此外，禁止散点硬编码：
-   页面锚点 #101010（最深层：页面背景/代码块背景），页脚固定 #171717
-   表面层级全部高于页面：chrome #161616（导航栏/浮动面板/卡片面）→ base-05 #212121（悬停面）→ base-20 #282828（激活/深抬升面）
-   描边 base-25 #2e2e2e、base-30 #333333、base-35 #3f3f3f
-   文字 base-100 #dadada（正文）、base-70 #b3b3b3（次级）、base-60 #999999（弱化） */
+/* 暗色主题：夜蓝页面承接白天的天空，银白正文与浅蓝交互保持独立层级。
+   页面 #101D2A → 表面 #172A3A → 悬停 #21384B → 激活 #2A465D。 */
 :root.dark
-  --primary: #dadada
-  --page-bg: #101010
+  --primary: #A6CDE7
+  --page-bg: #101D2A
   --card-bg: transparent
   --card-bg-transparent: transparent
-  --article-surface-bg: #161616
+  --article-surface-bg: #172A3A
+  --surface-shadow-hover: 0 0.35rem 1rem rgba(0, 8, 18, 0.28)
+  --sky-art-visits-opacity: 0.28
+  --sky-art-archive-opacity: 0.25
+  --sky-art-visits-filter: brightness(0.84) saturate(0.55)
+  --sky-art-archive-filter: brightness(0.86) saturate(0.55)
 
-  --deep-text: #dadada
-  --title-active: #b3b3b3
+  --deep-text: #E4EDF4
+  --title-active: #B7D7EB
 
-  --btn-content: #dadada
+  --btn-content: #E4EDF4
   --btn-regular-bg: transparent
-  --btn-regular-bg-hover: #212121
-  --btn-regular-bg-active: #282828
+  --btn-regular-bg-hover: #21384B
+  --btn-regular-bg-active: #2A465D
 
-  --btn-plain-bg-hover: #212121
-  --btn-plain-bg-active: #282828
+  --btn-plain-bg-hover: #21384B
+  --btn-plain-bg-active: #2A465D
 
-  --btn-card-bg-hover: #212121
-  --btn-card-bg-active: #282828
+  --btn-card-bg-hover: #21384B
+  --btn-card-bg-active: #2A465D
 
-  --line-divider: #2e2e2e
-  --line-color: #2e2e2e
-  --meta-divider: #3f3f3f
-  --content-meta: #999999
-  --article-pinned-accent: oklch(0.72 0.16 25)
-  --article-title-marker: oklch(0.78 0.15 190)
+  --line-divider: #304C61
+  --line-color: #304C61
+  --meta-divider: #456278
+  --content-meta: #A8BBCB
+  --article-pinned-accent: #A6CDE7
+  --article-title-marker: #8CBBDC
   --article-category-lightness: 0.75
-  --article-category-chroma: 0.13
+  --article-category-chroma: 0.09
 
-  --inline-code-bg: #333333
-  --inline-code-color: #dadada
-  --strong-color: #dadada
-  --selection-bg: #333333
-  --codeblock-bg: #101010
-  --codeblock-topbar-bg: #101010
-  --codeblock-border: #2e2e2e
+  --inline-code-bg: #273F53
+  --inline-code-color: #E4EDF4
+  --strong-color: #F6FAFD
+  --selection-bg: #355872
+  --codeblock-bg: #122231
+  --codeblock-topbar-bg: #172A3A
+  --codeblock-border: #304C61
 
-  --license-block-bg: #161616
+  --license-block-bg: #172A3A
 
-  --link-underline: #333333
-  --link-hover: #999999
-  --link-active: #dadada
-  --link-color: oklch(0.80 0.12 210)
+  --link-underline: #4F7591
+  --link-hover: #D4E9F7
+  --link-active: #F6FAFD
+  --link-color: #A6CDE7
 
-  --float-panel-bg: #161616
-  --music-surface: #161616
-  --navbar-bg: #161616
-  --navbar-highlight-bg: #FFFFFF
-  --navbar-highlight-text: #000000
+  --float-panel-bg: #172A3A
+  --music-surface: #172A3A
+  --navbar-bg: #172A3A
+  --navbar-highlight-bg: #D8E8F3
+  --navbar-highlight-text: #14283A
 
   --scrollbar-bg: var(--scrollbar-bg-dark)
   --scrollbar-bg-hover: var(--scrollbar-bg-hover-dark)
@@ -217,48 +245,48 @@
   --display-light-icon: 0
   --display-dark-icon: 1
 
-  --admonitions-color-tip: #b3b3b3
-  --admonitions-color-note: #b3b3b3
-  --admonitions-color-important: #b3b3b3
-  --admonitions-color-warning: #b3b3b3
-  --admonitions-color-caution: #dadada
+  --admonitions-color-tip: #A6CDE7
+  --admonitions-color-note: #A6CDE7
+  --admonitions-color-important: #B7CBE0
+  --admonitions-color-warning: #D8C59C
+  --admonitions-color-caution: #EEA5AE
 
   --guestbook-panel: transparent
   --guestbook-surface: transparent
-  --guestbook-editor-bg: #282828
-  --guestbook-editor-text: #dadada
-  --guestbook-editor-muted: #b3b3b3
-  --guestbook-editor-line: #555555
-  --guestbook-editor-hover: #232323
-  --guestbook-focus: #dadada
-  --guestbook-send-bg: #FFFFFF
-  --guestbook-send-text: #101010
-  --guestbook-link: #22C55E
-  --guestbook-overlay: rgb(0 0 0 / 0.72)
-  --guestbook-bubble: #282828
-  --guestbook-bubble-text: #dadada
-  --guestbook-admin-bubble: #FFFFFF
-  --guestbook-admin-text: #101010
+  --guestbook-editor-bg: #21384B
+  --guestbook-editor-text: #E4EDF4
+  --guestbook-editor-muted: #A8BBCB
+  --guestbook-editor-line: #4F7089
+  --guestbook-editor-hover: #2A465D
+  --guestbook-focus: #A6CDE7
+  --guestbook-send-bg: #A6CDE7
+  --guestbook-send-text: #14283A
+  --guestbook-link: #A6CDE7
+  --guestbook-overlay: rgb(16 29 42 / 0.72)
+  --guestbook-bubble: #21384B
+  --guestbook-bubble-text: #E4EDF4
+  --guestbook-admin-bubble: #A6CDE7
+  --guestbook-admin-text: #14283A
   --guestbook-muted: var(--content-meta)
   --guestbook-line: var(--line-divider)
-  --guestbook-dock-bg: #282828
+  --guestbook-dock-bg: #172A3A
   --guestbook-danger: var(--admonitions-color-caution)
   --guestbook-success: var(--admonitions-color-tip)
-  --guestbook-waiting: #E5484D
+  --guestbook-waiting: #EEA5AE
 
   --toc-badge-bg: transparent
-  --toc-btn-hover: #212121
-  --toc-btn-active: #282828
-  --toc-item-active: #dadada
+  --toc-btn-hover: #21384B
+  --toc-btn-active: #2A465D
+  --toc-item-active: #E4EDF4
 
-  --color-selection-bar: linear-gradient(to right, #dadada, #999999, #333333)
+  --color-selection-bar: linear-gradient(to right, #D8E8F3, #6A9DBC, #273F53)
 
-  --tag-graph-surface: #161616
-  --tag-graph-text: #dadada
-  --tag-graph-muted: #b3b3b3
-  --tag-graph-tooltip-bg: rgba(22, 22, 22, 0.94)
-  --tag-graph-tooltip-text: #dadada
-  --tag-graph-tooltip-border: rgba(255, 255, 255, 0.18)
+  --tag-graph-surface: #172A3A
+  --tag-graph-text: #E4EDF4
+  --tag-graph-muted: #A8BBCB
+  --tag-graph-tooltip-bg: rgba(23, 42, 58, 0.96)
+  --tag-graph-tooltip-text: #E4EDF4
+  --tag-graph-tooltip-border: rgba(178, 201, 220, 0.18)
   --tag-graph-node-1: #e25552
   --tag-graph-node-2: #5c91c2
   --tag-graph-node-3: #59aaa0
@@ -268,7 +296,7 @@
   --tag-graph-node-7: #7bac54
   --tag-graph-node-8: #ad9189
 
-  --graph-chip-checked: oklch(0.75 0.12 190)
+  --graph-chip-checked: #5086A8
 
 /* ===== 友链卡片彩色调色板（Cute Doodle Palette） ===== */
 :root

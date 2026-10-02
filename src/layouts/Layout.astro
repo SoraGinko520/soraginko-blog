@@ -111,7 +111,7 @@ const siteLang = lang.replace("_", "-");
     {siteConfig.analytics?.microsoftClarityId && (
       <MicrosoftClarity clarityId={siteConfig.analytics.microsoftClarityId} />
     )}
-    {siteConfig.analytics?.umamiAnalytics?.websiteId && (
+    {siteConfig.analytics?.umamiAnalytics?.websiteId && siteConfig.analytics.umamiAnalytics.scriptUrl && (
       <UmamiAnalytics
         websiteId={siteConfig.analytics.umamiAnalytics.websiteId}
         scriptUrl={siteConfig.analytics.umamiAnalytics.scriptUrl}
@@ -243,6 +243,7 @@ const siteLang = lang.replace("_", "-");
     <FontManager />
   </head>
   <body
+    data-busuanzi-host={new URL(siteConfig.site_url).hostname}
     class="min-h-screen bg-(--page-bg) text-(--deep-text)"
     class:list={[
       ...(siteConfig.font.enable && siteConfig.font.selected
@@ -335,6 +336,8 @@ const siteLang = lang.replace("_", "-");
 
 <script>
 	import { initLayout } from "@/utils/layout-init";
+	import { initBusuanzi } from "@/utils/busuanzi-controller";
 
 	initLayout();
+	initBusuanzi();
 </script>

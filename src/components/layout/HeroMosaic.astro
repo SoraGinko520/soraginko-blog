@@ -1,14 +1,15 @@
 ---
-import type { HeroMosaicConfig } from "@/types/config";
+import type { HeroArtworkConfig, HeroMosaicConfig } from "@/types/config";
 import { createHeroTileLayout } from "@/utils/home-hero-motion";
 
 interface Props {
 	desktopImage: string;
 	mobileImage: string;
 	config: HeroMosaicConfig;
+	artwork: HeroArtworkConfig;
 }
 
-const { desktopImage, mobileImage, config } = Astro.props;
+const { desktopImage, mobileImage, config, artwork } = Astro.props;
 const tiles = createHeroTileLayout(config);
 const mosaicStyle = [
 	`--home-hero-mosaic-image: url("${desktopImage}")`,
@@ -23,10 +24,11 @@ const mosaicStyle = [
 		<source media="(max-width: 768px)" srcset={mobileImage} />
 		<img
 			class="home-hero__backdrop-image"
+			data-hero-foreground
 			src={desktopImage}
 			alt=""
-			width="3000"
-			height="1500"
+			width={artwork.width}
+			height={artwork.height}
 			loading="eager"
 			fetchpriority="high"
 			decoding="async"
@@ -59,7 +61,7 @@ const mosaicStyle = [
 		</div>
 		<picture class="home-hero__mosaic-complete" data-hero-mosaic-complete>
 			<source media="(max-width: 768px)" srcset={mobileImage} />
-			<img src={desktopImage} alt="" width="3000" height="1500" decoding="async" />
+			<img src={desktopImage} alt="" width={artwork.width} height={artwork.height} decoding="async" />
 		</picture>
 	</div>
 </div>

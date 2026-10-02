@@ -49,8 +49,8 @@
 	flex: 0 0 2.125rem;
 	place-items: center;
 	border-radius: 0.625rem;
-	background: rgb(0 162 155 / 0.12);
-	color: #00a29b;
+	background: color-mix(in srgb, var(--primary) 12%, transparent);
+	color: var(--primary);
 	transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
@@ -77,8 +77,8 @@
 	flex: 0 0 auto;
 	padding: 0.1875rem 0.625rem;
 	border-radius: 999px;
-	background: rgb(0 162 155 / 0.12);
-	color: #00a29b;
+	background: color-mix(in srgb, var(--primary) 12%, transparent);
+	color: var(--primary);
 	font-size: 0.75rem;
 	font-weight: 700;
 	line-height: 1.4;
@@ -95,7 +95,7 @@
 }
 
 .tech-accordion[data-tech-accordion="open"] .tech-accordion__arrow {
-	color: #00a29b;
+	color: var(--primary);
 	rotate: 180deg;
 }
 

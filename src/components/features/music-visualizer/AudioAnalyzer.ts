@@ -60,9 +60,6 @@ function getSharedAudioGraph(
 	const w = window as unknown as Record<string, unknown>;
 	const existing = w[SHARED_GRAPH_KEY] as SharedAudioGraph | undefined;
 	if (existing) {
-		if (existing.audioCtx.state === "suspended") {
-			existing.audioCtx.resume();
-		}
 		return existing;
 	}
 
@@ -93,6 +90,7 @@ function getSharedAudioGraph(
 export class AudioAnalyzer {
 	public audioCtx: AudioContext | null = null;
 	private analyser: AnalyserNode | null = null;
+	private gainNode: GainNode | null = null;
 	private audioElement: HTMLAudioElement | null = null;
 	private dataArray = new Uint8Array(512);
 	private prevData: number[] = new Array(512).fill(0);
@@ -130,6 +128,7 @@ export class AudioAnalyzer {
 
 	connect(audioEl: HTMLAudioElement) {
 		if (this.connected && this.audioElement === audioEl) return;
+		this.disconnect();
 		this.audioElement = audioEl;
 
 		// Reuse the shared singleton audio graph. This is MANDATORY because:
@@ -144,7 +143,7 @@ export class AudioAnalyzer {
 		this.audioCtx = graph.audioCtx;
 
 		if (this.audioCtx.state === "suspended") {
-			this.audioCtx.resume();
+			this.resume();
 		}
 
 		// Per-instance analyser tapped off the shared gainNode. Multiple
@@ -154,6 +153,7 @@ export class AudioAnalyzer {
 		this.analyser.fftSize = 1024;
 		this.analyser.smoothingTimeConstant = 0.8;
 		graph.gainNode.connect(this.analyser);
+		this.gainNode = graph.gainNode;
 
 		this.dataArray = new Uint8Array(this.analyser.frequencyBinCount);
 		this.connected = true;
@@ -167,6 +167,13 @@ export class AudioAnalyzer {
 		// and the sidebar MusicPlayer would stop producing sound after the
 		// user navigates away from /music/.
 		if (this.analyser) {
+			if (this.gainNode) {
+				try {
+					this.gainNode.disconnect(this.analyser);
+				} catch {
+					/* Already disconnected; preserve the shared speaker output. */
+				}
+			}
 			try {
 				this.analyser.disconnect();
 			} catch {
@@ -177,6 +184,7 @@ export class AudioAnalyzer {
 		// Null out local references but do NOT close audioCtx and do NOT
 		// disconnect source / gainNode.
 		this.audioCtx = null;
+		this.gainNode = null;
 		this.audioElement = null;
 		this.connected = false;
 	}
@@ -187,7 +195,10 @@ export class AudioAnalyzer {
 
 	resume() {
 		if (this.audioCtx?.state === "suspended") {
-			this.audioCtx.resume();
+			void this.audioCtx.resume().catch((error: unknown) => {
+				// A later user gesture can retry without autoplaying the media.
+				console.warn("AudioAnalyzer: Audio context resume failed", error);
+			});
 		}
 	}
 

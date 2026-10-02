@@ -5,7 +5,7 @@
 }
 
 :root.dark .site-footer {
-	background: #161616;
+	background: var(--article-surface-bg);
 }
 
 .site-footer__inner {
@@ -253,10 +253,18 @@
 
 .site-footer__status-line {
 	display: inline-flex;
+	min-width: 0;
+	max-width: 100%;
 	align-items: center;
 	justify-content: flex-end;
 	gap: 0.375rem;
 	color: var(--content-meta);
+}
+
+.site-footer__status-line span {
+	min-width: 0;
+	overflow-wrap: anywhere;
+	font-variant-numeric: tabular-nums;
 }
 
 .site-footer__status-line svg {

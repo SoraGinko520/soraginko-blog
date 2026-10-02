@@ -1,0 +1,79 @@
+---
+import { getEntry, render } from "astro:content";
+import type { GetStaticPaths } from "astro";
+import CoverImage from "@/components/common/CoverImage.astro";
+import Icon from "@/components/common/Icon.astro";
+import Markdown from "@/components/common/Markdown.astro";
+import PageTitle from "@/components/common/PageTitle.astro";
+import { siteConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import type { Project } from "@/types/projects";
+import { buildCoverImage } from "@/utils/cover-image";
+import { formatDateI18n } from "@/utils/date-utils";
+import {
+	getGithubProjects,
+	getProjectStatusKey,
+} from "@/utils/github-projects";
+import { url } from "@/utils/url-utils";
+import "@/styles/pages/projects.css";
+
+export const getStaticPaths: GetStaticPaths = async () => {
+	if (!siteConfig.pages.projects) return [];
+	const { projects } = await getGithubProjects();
+	return projects.map((project) => ({
+		params: { slug: project.slug },
+		props: { project },
+	}));
+};
+
+interface Props {
+	project: Project;
+}
+
+const { project } = Astro.props;
+// 复用现有特殊内容集合，不要求每个公开仓库另写一份项目数据。
+const projectFiles = import.meta.glob("/src/content/spec/project-*.{md,mdx}");
+const hasProjectContent = Object.keys(projectFiles).some((file) =>
+	file.replace(/\.(md|mdx)$/, "").endsWith(`/project-${project.slug}`),
+);
+const projectEntry = hasProjectContent
+	? await getEntry("spec", `project-${project.slug}`)
+	: undefined;
+const projectContent = projectEntry ? await render(projectEntry) : null;
+const ProjectContent = projectContent?.Content;
+const cover = await buildCoverImage({
+	image: project.cover,
+	widths: [800, 1200],
+	sizes: "100vw",
+});
+---
+
+<MainGridLayout title={project.title} description={project.description || i18n(I18nKey.projectsNoDescription)} hasOwnH1={true}>
+	<article class="project-detail card-base z-10 px-4 py-6 md:px-9 relative w-full">
+		<a class="project-link" href={url("/projects/")}><span aria-hidden="true">← </span>{i18n(I18nKey.projectsBack)}</a>
+		<PageTitle title={project.title} eyebrow="PROJECTS" description={project.description || i18n(I18nKey.projectsNoDescription)} variant="stacked" />
+		<div class="project-detail__summary">
+			<span class="project-status" data-status={project.status}>{i18n(getProjectStatusKey(project.status))}</span>
+			{(project.language || project.tags.length > 0) && <ul class="project-card__tags">
+				{project.language && <li>{project.language}</li>}
+				{project.tags.filter((tag) => tag !== project.language).map((tag) => <li>{tag}</li>)}
+			</ul>}
+		</div>
+		{cover && <div class="project-detail__cover"><CoverImage cover={cover} alt={`${project.title} ${i18n(I18nKey.projectCover)}`} class="project-card__image" /></div>}
+		<dl class="project-detail__meta">
+			<div><dt>{i18n(I18nKey.projectsRepository)}</dt><dd><a class="project-link" href={project.githubUrl} target="_blank" rel="noopener noreferrer">{project.fullName}</a></dd></div>
+			{project.language && <div><dt>{i18n(I18nKey.projectsLanguage)}</dt><dd>{project.language}</dd></div>}
+			<div><dt>{i18n(I18nKey.projectsStars)}</dt><dd>{project.stars}</dd></div>
+			<div><dt>{i18n(I18nKey.projectsForks)}</dt><dd>{project.forks}</dd></div>
+			<div><dt>{i18n(I18nKey.projectsCreated)}</dt><dd><time datetime={project.createdAt}>{formatDateI18n(project.createdAt)}</time></dd></div>
+			<div><dt>{i18n(I18nKey.projectsUpdated)}</dt><dd><time datetime={project.updatedAt}>{formatDateI18n(project.updatedAt)}</time></dd></div>
+		</dl>
+		<div class="project-card__links">
+			<a class="project-link" href={project.githubUrl} target="_blank" rel="noopener noreferrer"><Icon name="fa7-brands:github" aria-hidden="true" />{i18n(I18nKey.projectsGitHub)}</a>
+			{project.demoUrl && <a class="project-link" href={project.demoUrl} target="_blank" rel="noopener noreferrer"><Icon name="material-symbols:open-in-new-rounded" aria-hidden="true" />{i18n(I18nKey.projectsDemo)}</a>}
+		</div>
+		{ProjectContent && <Markdown class="mt-6"><ProjectContent /></Markdown>}
+	</article>
+</MainGridLayout>

@@ -31,7 +31,23 @@ export const LinkPresets: { [key in LinkPreset]: NavBarLink } = {
 	[LinkPreset.Friends]: {
 		name: i18n(I18nKey.friends),
 		url: "/friends/",
+		icon: "material-symbols:link-2-rounded",
+	},
+	[LinkPreset.Projects]: {
+		name: i18n(I18nKey.projects),
+		url: "/projects/",
+		icon: "material-symbols:rocket-launch",
+		activePathPrefixes: ["/projects/"],
+	},
+	[LinkPreset.Social]: {
+		name: i18n(I18nKey.social),
+		url: "/friends/",
 		icon: "material-symbols:group",
+	},
+	[LinkPreset.Fcircle]: {
+		name: i18n(I18nKey.fcircleTitle),
+		url: "/fcircle/",
+		icon: "mingcute:moment-line",
 	},
 	[LinkPreset.Sponsor]: {
 		name: i18n(I18nKey.sponsor),

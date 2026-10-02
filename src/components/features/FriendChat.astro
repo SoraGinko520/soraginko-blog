@@ -156,28 +156,44 @@ const siteInfoRows = site
       </div>
     )}
   </div>
+  <p class="text-sm text-(--content-meta) mt-2" role="status" aria-live="polite" data-friend-copy-status></p>
 </section>
 
 <script>
+  import I18nKey from "@/i18n/i18nKey";
+  import { i18n } from "@/i18n/translation";
   import { definePageIsland } from "@/utils/swup-lifecycle";
 
   // 已播放过的对话根节点，防止重复触发
   const playedRoots = new WeakSet<HTMLElement>();
+  const chatObservers = new Set<IntersectionObserver>();
+  const copyTimers = new Set<ReturnType<typeof setTimeout>>();
+  let controller: AbortController | null = null;
 
-  function sleep(ms: number): Promise<void> {
-    return new Promise((resolve) => setTimeout(resolve, ms));
+  function sleep(ms: number, signal: AbortSignal): Promise<void> {
+    return new Promise((resolve) => {
+      if (signal.aborted) { resolve(); return; }
+      const finish = () => {
+        clearTimeout(timer);
+        signal.removeEventListener("abort", finish);
+        resolve();
+      };
+      const timer = setTimeout(finish, ms);
+      signal.addEventListener("abort", finish, { once: true });
+    });
   }
 
   // 打字机：逐字写入气泡文本，打字期间显示光标
-  async function typewriter(el: HTMLElement, text: string): Promise<void> {
+  async function typewriter(el: HTMLElement, text: string, signal: AbortSignal): Promise<void> {
     const speed = 40;
     for (let i = 1; i <= text.length; i++) {
+      if (signal.aborted) return;
       el.textContent = text.slice(0, i);
-      await sleep(speed);
+      await sleep(speed, signal);
     }
   }
 
-  async function playChat(root: HTMLElement): Promise<void> {
+  async function playChat(root: HTMLElement, signal: AbortSignal): Promise<void> {
     if (playedRoots.has(root)) return;
     playedRoots.add(root);
 
@@ -189,6 +205,7 @@ const siteInfoRows = site
     const reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     for (const item of items) {
+      if (signal.aborted) return;
       const text = item.dataset.text ?? "";
       const textEl = item.querySelector<HTMLElement>("[data-friend-chat-text]");
 
@@ -201,14 +218,14 @@ const siteInfoRows = site
       }
 
       item.classList.add("is-typing");
-      await sleep(350);
-      await typewriter(textEl, text);
+      await sleep(350, signal);
+      await typewriter(textEl, text, signal);
       item.classList.remove("is-typing");
-      await sleep(300);
+      await sleep(300, signal);
     }
   }
 
-  function initFriendChat(): void {
+  function initFriendChat(signal: AbortSignal): void {
     const roots = document.querySelectorAll<HTMLElement>("[data-friend-chat]");
     if (!roots.length) return;
 
@@ -220,36 +237,65 @@ const siteInfoRows = site
           for (const entry of entries) {
             if (entry.isIntersecting) {
               observer.disconnect();
-              void playChat(root);
+              chatObservers.delete(observer);
+              void playChat(root, signal);
             }
           }
         },
         { threshold: 0.3 },
       );
+      chatObservers.add(observer);
       observer.observe(root);
     });
   }
 
   // 复制按钮：点击后图标切换为对勾 1.5s
-  function initFriendCopy(): void {
+  function initFriendCopy(signal: AbortSignal): void {
     document
       .querySelectorAll<HTMLElement>(".friend-apply__copy[data-copy-text]")
       .forEach((btn) => {
         if (btn.dataset.copyBound === "true") return;
         btn.dataset.copyBound = "true";
-        btn.addEventListener("click", () => {
-          void navigator.clipboard.writeText(btn.dataset.copyText ?? "");
-          btn.classList.add("is-copied");
-          setTimeout(() => btn.classList.remove("is-copied"), 1500);
-        });
+        btn.addEventListener("click", async () => {
+          const status = btn.closest("[data-friend-chat]")?.querySelector<HTMLElement>("[data-friend-copy-status]");
+          try {
+            await navigator.clipboard.writeText(btn.dataset.copyText ?? "");
+            if (signal.aborted) return;
+            btn.classList.add("is-copied");
+            if (status) status.textContent = i18n(I18nKey.copied);
+            const timer = setTimeout(() => {
+              btn.classList.remove("is-copied");
+              copyTimers.delete(timer);
+            }, 1500);
+            copyTimers.add(timer);
+          } catch {
+            if (signal.aborted) return;
+            btn.classList.remove("is-copied");
+            if (status) status.textContent = i18n(I18nKey.copyFailed);
+          }
+        }, { signal });
       });
   }
 
   function initAll(): void {
-    initFriendChat();
-    initFriendCopy();
+    controller = new AbortController();
+    initFriendChat(controller.signal);
+    initFriendCopy(controller.signal);
+  }
+
+  function cleanup(): void {
+    controller?.abort();
+    controller = null;
+    for (const observer of chatObservers) observer.disconnect();
+    chatObservers.clear();
+    for (const timer of copyTimers) clearTimeout(timer);
+    copyTimers.clear();
+    document.querySelectorAll<HTMLElement>(".friend-apply__copy[data-copy-text]").forEach((btn) => {
+      delete btn.dataset.copyBound;
+      btn.classList.remove("is-copied");
+    });
   }
 
   // 只存在于 /friends/，随容器进出；初始化本身靠 WeakSet 与 dataset 标记保持幂等
-  definePageIsland({ name: "friend-chat", mount: initAll });
+  definePageIsland({ name: "friend-chat", mount: initAll, unmount: cleanup });
 </script>

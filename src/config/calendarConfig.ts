@@ -60,13 +60,10 @@ export const calendarConfig: CalendarConfig = {
 
 	// 建站纪念日 — Logo 资料卡右侧进度条展示
 	// 支持公历或农历（农历需 type: "lunar"，构建期自动换算为当年公历日期）
-	siteAnniversary: undefined,
-	/* 首次正式上线后填入实际建站日期：
 	siteAnniversary: {
 		name: "建站日",
-		date: { type: "solar", month: 1, day: 1 },
+		date: { type: "solar", month: 10, day: 2 },
 		icon: "material-symbols:rocket-launch",
-		note: "SoraGinko 首次上线纪念日",
+		note: "用户确认的起站日期为 2026-10-02；秒级运行时长另以首次提交时刻计时。",
 	},
-	*/
 };

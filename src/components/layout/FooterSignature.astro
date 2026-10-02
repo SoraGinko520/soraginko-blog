@@ -1,1 +1,45 @@
-<span class="site-footer__signature-art">SoraGinko</span>
+---
+// 字形使用独立绘制的连笔路径；沿用页脚已有遮罩与描绘动画，不加载字体文件。
+const signaturePath =
+	"M73 36C61 20 32 28 28 44C23 61 68 55 68 77C68 95 33 106 19 90C12 81 19 70 31 70M64 86C74 86 80 73 87 67M97 66C83 62 76 79 80 90C84 101 98 94 104 81C111 68 102 61 96 69C90 78 110 82 116 70C120 61 122 59 121 71L116 93C121 76 132 61 139 68C142 73 135 77 141 83C145 87 149 81 151 76M170 67C157 60 145 76 148 87C151 101 166 90 172 74L169 91C169 100 181 89 187 79M249 41C236 22 207 28 195 49C184 72 184 98 205 98C224 98 239 80 242 67C236 69 224 69 217 72M241 67C239 89 237 116 222 120C211 124 202 118 208 109C217 100 242 99 252 84C255 81 259 72 261 67L256 86C253 99 265 93 273 79C278 72 282 63 282 67L275 92C283 71 291 64 298 69C306 75 292 96 306 91C313 88 318 79 322 72C330 57 342 35 335 31C326 26 320 74 318 94M319 81C329 81 342 60 348 66C352 72 338 80 322 80C338 82 337 99 349 90C355 86 361 78 366 73M382 65C367 64 357 83 364 93C371 103 386 89 388 77C391 66 383 63 379 69C375 78 391 80 400 74C410 69 415 62 424 54";
+---
+
+<svg
+	class="site-footer__signature-art"
+	viewBox="0 0 450 140"
+	fill="none"
+	role="img"
+	aria-labelledby="site-footer-signature-title"
+	data-footer-signature
+>
+	<title id="site-footer-signature-title">SoraGinko</title>
+	<defs>
+		<mask id="soraginko-footer-signature-mask" maskUnits="userSpaceOnUse" x="0" y="0" width="450" height="140">
+			<path
+				class="site-footer__signature-mask"
+				d={signaturePath}
+				pathLength="1"
+				stroke="white"
+				stroke-width="22"
+				stroke-linecap="round"
+				stroke-linejoin="round"
+			/>
+		</mask>
+	</defs>
+	<path
+		class="site-footer__signature-ink"
+		d={signaturePath}
+		mask="url(#soraginko-footer-signature-mask)"
+		stroke="currentColor"
+		stroke-width="6"
+		stroke-linecap="round"
+		stroke-linejoin="round"
+	/>
+	<path
+		class="site-footer__signature-dot site-footer__signature-dot--i"
+		d="M264 50L265 47"
+		stroke="currentColor"
+		stroke-width="6"
+		stroke-linecap="round"
+	/>
+</svg>

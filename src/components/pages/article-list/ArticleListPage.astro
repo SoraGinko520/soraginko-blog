@@ -145,7 +145,7 @@ const umamiPageviews = {
 		!!umamiConfig?.pageviews?.enabled &&
 		!!umamiConfig.shareId &&
 		!!umamiConfig.scriptUrl,
-	apiBase: umamiConfig?.scriptUrl ? new URL(umamiConfig.scriptUrl).origin : "",
+	apiBase: "", // Cloud 免费模式不提供客户端统计 API。
 	shareId: umamiConfig?.shareId || "",
 };
 ---

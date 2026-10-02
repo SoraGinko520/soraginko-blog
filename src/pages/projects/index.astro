@@ -1,0 +1,72 @@
+---
+import PageTitle from "@/components/common/PageTitle.astro";
+import ProjectCard from "@/components/pages/ProjectCard.astro";
+import { siteConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import { projectStatuses } from "@/types/projects";
+import {
+	getGithubProjects,
+	getProjectStatusKey,
+} from "@/utils/github-projects";
+import "@/styles/pages/projects.css";
+
+if (!siteConfig.pages.projects) return Astro.redirect("/404/");
+
+const snapshot = await getGithubProjects();
+const { projects } = snapshot;
+const countLabel = i18n(I18nKey.projectsCount);
+---
+
+<MainGridLayout title={i18n(I18nKey.projects)} description={i18n(I18nKey.projectsDescription)} hasOwnH1={true}>
+	<div class="projects-page card-base z-10 px-4 py-6 md:px-9 relative w-full" data-projects-page>
+		<PageTitle title={i18n(I18nKey.projects)} eyebrow="PROJECTS" description={i18n(I18nKey.projectsDescription)} variant="stacked" />
+		{snapshot.source === "cache" && <p class="projects-notice">{i18n(I18nKey.projectsCacheNotice)}</p>}
+		{projects.length > 0 ? (
+			<>
+				<div class="projects-controls" data-project-enhancement hidden>
+					<label class="projects-search">
+						<span class="sr-only">{i18n(I18nKey.projectsSearchLabel)}</span>
+						<input type="search" placeholder={i18n(I18nKey.projectsSearch)} data-project-search-input autocomplete="off" />
+					</label>
+					<div class="projects-filters" role="group" aria-label={i18n(I18nKey.projectsFilterLabel)} data-project-filters>
+						<button type="button" class="projects-filter" data-project-filter="all" aria-pressed="true">{i18n(I18nKey.projectsAll)}</button>
+						{projectStatuses.map((status) => (
+							<button type="button" class="projects-filter" data-project-filter={status} aria-pressed="false">{i18n(getProjectStatusKey(status))}</button>
+						))}
+					</div>
+				</div>
+				<p class="projects-count" role="status" aria-live="polite" aria-atomic="true" data-project-count={countLabel}>{countLabel.replace("{count}", String(projects.length))}</p>
+				<div class="projects-grid grid grid-cols-1 md:grid-cols-2">
+					{projects.map((project) => <ProjectCard project={project} />)}
+				</div>
+				<p class="projects-empty" data-project-no-results hidden>{i18n(I18nKey.projectsNoResults)}</p>
+			</>
+		) : (
+			<div class="projects-empty">
+				<p>{i18n(I18nKey.projectsEmpty)}</p>
+				<p class="projects-empty__hint">{i18n(snapshot.source === "empty" ? I18nKey.projectsUnavailable : I18nKey.projectsEmptyHint)}</p>
+			</div>
+		)}
+	</div>
+</MainGridLayout>
+
+<script>
+	import { createProjectsController } from "@/utils/projects-controller";
+	import { definePageIsland } from "@/utils/swup-lifecycle";
+
+	let cleanup: (() => void) | undefined;
+	definePageIsland({
+		name: "github-projects",
+		match: () => !!document.querySelector("[data-projects-page]"),
+		mount: () => {
+			const root = document.querySelector<HTMLElement>("[data-projects-page]");
+			if (root) cleanup = createProjectsController(root);
+		},
+		unmount: () => {
+			cleanup?.();
+			cleanup = undefined;
+		},
+	});
+</script>

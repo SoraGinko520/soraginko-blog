@@ -31,8 +31,17 @@ export type FlyTextHandle = {
 	rebuild(): void;
 	/** 散落 → 自然汇聚，时间驱动入场时间线（paused，由调用方播放） */
 	buildEntrance(timeScale?: number): gsap.core.Timeline | null;
+	/** 逐字遮罩揭开与压缩归位，复用已测量的字符 */
+	buildReveal(duration?: number): gsap.core.Timeline | null;
+	/** 一次性逐字波浪回应，由调用方取消上一段 */
+	buildReaction(duration?: number): gsap.core.Timeline | null;
+	/** 已测量字符上的一次性流光，不在动画帧中读取布局 */
+	buildShine(duration?: number): gsap.core.Timeline | null;
 	/** 自然 → 风散消失，固定窗口时长，用于嵌入 scrub 时间线 */
-	buildScatter(windowDuration?: number): gsap.core.Timeline | null;
+	buildScatter(
+		windowDuration?: number,
+		direction?: "out" | "in",
+	): gsap.core.Timeline | null;
 	/** 直接设置字符为自然状态 */
 	setNatural(): void;
 	/** 订阅宿主布局变化（防抖后回调），返回取消函数 */
@@ -42,6 +51,8 @@ export type FlyTextHandle = {
 
 type CharMotion = {
 	element: HTMLElement;
+	backgroundX: number;
+	backgroundY: number;
 	/** 0-1：stagger 窗口内的随机起点 */
 	startFraction: number;
 	/** 0.72-1：占窗口时长的比例 */
@@ -59,11 +70,28 @@ type CharMotion = {
 const NATURAL = {
 	x: 0,
 	y: 0,
+	yPercent: 0,
 	z: 0,
+	scaleX: 1,
+	scaleY: 1,
 	rotationX: 0,
 	rotationY: 0,
 	rotationZ: 0,
 	opacity: 1,
+	clipPath: "inset(0% 0% 0% 0%)",
+} as const;
+
+const FLY_TEXT_MOTION = {
+	revealStaggerRatio: 0.23,
+	revealOffset: 85,
+	revealScaleX: 0.88,
+	revealScaleY: 1.14,
+	reactionStaggerRatio: 0.18,
+	reactionRiseRatio: 0.36,
+	reactionOffset: -18,
+	reactionRotation: -3,
+	shineStart: -1.85,
+	shineEnd: -0.15,
 } as const;
 
 function sfc32(seedA: number, seedB: number, seedC: number, seedD: number) {
@@ -125,6 +153,7 @@ export function createFlyText(
 	let lastWidth = 0;
 	let lastHeight = 0;
 	let observerReady = false;
+	let backgroundWidth = 0;
 	const layoutListeners = new Set<() => void>();
 
 	const observer = new ResizeObserver((entries) => {
@@ -152,9 +181,9 @@ export function createFlyText(
 
 	const measure = () => {
 		if (!placeholder || !overlay || !raw) return;
-		overlay.innerHTML = "";
 		const random = createSeededRandom(config.seed);
 		const hostRect = host.getBoundingClientRect();
+		backgroundWidth = hostRect.width;
 		const textNode = placeholder.firstChild;
 		if (!textNode) return;
 
@@ -162,6 +191,7 @@ export function createFlyText(
 		const windX = Math.cos(rad);
 		const windY = -Math.sin(rad);
 		const next: CharMotion[] = [];
+		const measurements: { character: string; rect: DOMRect }[] = [];
 
 		for (let i = 0; i < raw.length; i++) {
 			if (raw[i] === " ") continue;
@@ -171,12 +201,17 @@ export function createFlyText(
 			range.setEnd(textNode, i + 1);
 			const rect = range.getBoundingClientRect();
 			if (rect.width === 0 && rect.height === 0) continue;
+			measurements.push({ character: raw[i], rect });
+		}
 
+		// 先完成所有 Range 测量，再一次性写入字符，避免每个字触发布局刷新。
+		const fragment = document.createDocumentFragment();
+		for (const { character, rect } of measurements) {
 			const x = rect.left - hostRect.left;
 			const y = rect.top - hostRect.top;
 			const element = document.createElement("span");
 			element.className = "home-hero__fly-char";
-			element.textContent = raw[i];
+			element.textContent = character;
 			element.style.left = `${x.toFixed(2)}px`;
 			element.style.top = `${y.toFixed(2)}px`;
 			element.style.width = `${rect.width.toFixed(2)}px`;
@@ -184,12 +219,22 @@ export function createFlyText(
 			// 条纹渐变相位补偿：让字符内的图案与整段渲染时对齐
 			element.style.setProperty("--home-hero-fly-bg-x", `${(-x).toFixed(2)}px`);
 			element.style.setProperty("--home-hero-fly-bg-y", `${(-y).toFixed(2)}px`);
-			overlay.appendChild(element);
+			element.style.setProperty(
+				"--home-hero-fly-bg-width",
+				`${hostRect.width.toFixed(2)}px`,
+			);
+			element.style.setProperty(
+				"--home-hero-fly-bg-height",
+				`${hostRect.height.toFixed(2)}px`,
+			);
+			fragment.appendChild(element);
 
 			const angle = random() * Math.PI * 2;
 			const distance = random() * config.scatter;
 			next.push({
 				element,
+				backgroundX: -x,
+				backgroundY: -y,
 				startFraction: random(),
 				durationFraction: 0.72 + random() * 0.28,
 				scatter: {
@@ -203,6 +248,7 @@ export function createFlyText(
 			});
 		}
 
+		overlay.replaceChildren(fragment);
 		chars = next;
 	};
 
@@ -262,7 +308,103 @@ export function createFlyText(
 		return timeline;
 	};
 
-	const buildScatter = (windowDuration = 0.12) => {
+	const buildReveal = (duration = 1.4) => {
+		if (!chars.length) return null;
+		const elements = chars.map((char) => char.element);
+		const staggerWindow = duration * FLY_TEXT_MOTION.revealStaggerRatio;
+		const timeline = gsap.timeline({
+			onComplete: () => gsap.set(elements, { clearProps: "willChange" }),
+		});
+		const initial = {
+			...NATURAL,
+			yPercent: FLY_TEXT_MOTION.revealOffset,
+			scaleX: FLY_TEXT_MOTION.revealScaleX,
+			scaleY: FLY_TEXT_MOTION.revealScaleY,
+			clipPath: "inset(0% 0% 100% 0%)",
+		};
+		gsap.set(elements, { ...initial, willChange: "transform" });
+		for (const [index, char] of chars.entries()) {
+			timeline.fromTo(
+				char.element,
+				initial,
+				{
+					...NATURAL,
+					duration: duration - staggerWindow,
+					ease: "power3.out",
+					immediateRender: false,
+				},
+				(index / Math.max(chars.length - 1, 1)) * staggerWindow,
+			);
+		}
+		return timeline;
+	};
+
+	const buildReaction = (duration = 1.1) => {
+		if (!chars.length) return null;
+		const elements = chars.map((char) => char.element);
+		const staggerWindow = duration * FLY_TEXT_MOTION.reactionStaggerRatio;
+		const riseDuration = duration * FLY_TEXT_MOTION.reactionRiseRatio;
+		const timeline = gsap.timeline({
+			onComplete: () => gsap.set(elements, { clearProps: "willChange" }),
+		});
+		gsap.set(elements, { ...NATURAL, willChange: "transform" });
+		for (const [index, char] of chars.entries()) {
+			const start = (index / Math.max(chars.length - 1, 1)) * staggerWindow;
+			timeline
+				.to(
+					char.element,
+					{
+						yPercent: FLY_TEXT_MOTION.reactionOffset,
+						rotationZ: FLY_TEXT_MOTION.reactionRotation,
+						duration: riseDuration,
+						ease: "power2.out",
+					},
+					start,
+				)
+				.to(
+					char.element,
+					{
+						...NATURAL,
+						duration: duration - staggerWindow - riseDuration,
+						ease: "power2.inOut",
+					},
+					start + riseDuration,
+				);
+		}
+		return timeline;
+	};
+
+	const buildShine = (duration = 1.8) => {
+		if (!chars.length) return null;
+		const elements = chars.map((char) => char.element);
+		const timeline = gsap.timeline({
+			onComplete: () =>
+				gsap.set(elements, { clearProps: "backgroundPosition" }),
+		});
+		// 每个字共用整段坐标；行程只跨过名称，避免大半动画都停留在文字外。
+		for (const char of chars) {
+			const base = `${char.backgroundX}px ${char.backgroundY}px`;
+			timeline.fromTo(
+				char.element,
+				{
+					backgroundPosition: `${char.backgroundX + backgroundWidth * FLY_TEXT_MOTION.shineStart}px ${char.backgroundY}px, ${base}`,
+				},
+				{
+					backgroundPosition: `${char.backgroundX + backgroundWidth * FLY_TEXT_MOTION.shineEnd}px ${char.backgroundY}px, ${base}`,
+					duration,
+					ease: "sine.inOut",
+					immediateRender: false,
+				},
+				0,
+			);
+		}
+		return timeline;
+	};
+
+	const buildScatter = (
+		windowDuration = 0.12,
+		direction: "out" | "in" = "out",
+	) => {
 		if (!chars.length) return null;
 		const timeline = gsap.timeline();
 		gsap.set(
@@ -274,12 +416,11 @@ export function createFlyText(
 			const start = (windowDuration - duration) * char.startFraction;
 			timeline.fromTo(
 				char.element,
-				{ ...NATURAL },
+				direction === "out" ? { ...NATURAL } : { ...char.scatter, opacity: 0 },
 				{
-					...char.scatter,
-					opacity: 0,
+					...(direction === "out" ? { ...char.scatter, opacity: 0 } : NATURAL),
 					duration,
-					ease: "power3.in",
+					ease: direction === "out" ? "power3.in" : "power3.out",
 					immediateRender: false,
 				},
 				start,
@@ -290,7 +431,11 @@ export function createFlyText(
 
 	const setNatural = () => {
 		for (const char of chars) {
-			gsap.set(char.element, { ...NATURAL, transformPerspective: 500 });
+			gsap.set(char.element, {
+				...NATURAL,
+				transformPerspective: 500,
+				clearProps: "willChange",
+			});
 		}
 	};
 
@@ -299,6 +444,9 @@ export function createFlyText(
 		prepare,
 		rebuild: measure,
 		buildEntrance,
+		buildReveal,
+		buildReaction,
+		buildShine,
 		buildScatter,
 		setNatural,
 		onLayoutChange(callback) {

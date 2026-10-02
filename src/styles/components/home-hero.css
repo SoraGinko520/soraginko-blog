@@ -9,12 +9,26 @@ html:has(.home-hero) #top-row {
 }
 
 .home-hero {
-	--home-hero-ink: oklch(1 0 0);
-	--home-hero-surface: oklch(0.075 0 0);
+	--home-hero-ink: var(--deep-text);
+	--home-hero-surface: var(--page-bg);
+	--home-hero-muted: color-mix(in oklch, var(--home-hero-ink) 82%, var(--home-hero-surface));
+	--home-hero-accent: color-mix(in oklch, var(--home-hero-ink) 35%, var(--primary));
+	--home-hero-shine: color-mix(in oklch, var(--primary) 30%, var(--home-hero-surface));
+	--home-hero-signature-blue: color-mix(in srgb, var(--home-hero-ink) 65%, var(--primary));
+	--home-hero-sticker-width: clamp(10rem, 20vw, 17.5rem);
+	--home-hero-dialogue-gutter: clamp(var(--space-6), 4vw, 5rem);
+	--home-hero-dialogue-height: clamp(18rem, 31svh, 21rem);
+	--home-hero-column-gap: var(--space-8);
+	--home-hero-signature-width: clamp(14rem, 24vw, 24rem);
+	/* 宽而矮的窗口也需为下方按钮留空，不只按 vw 放大落款。 */
+	--home-hero-signature-size: clamp(2.125rem, min(4vw, 6.25svh), 4.25rem);
+	--home-hero-author-size: calc(var(--control-size) * 2);
+	--home-hero-rail-width: var(--control-size);
+	--home-hero-grid-step: calc(var(--space-8) * 2);
 	--home-hero-border: color-mix(in oklch, var(--home-hero-ink) 32%, transparent);
 	--home-hero-border-soft: color-mix(in oklch, var(--home-hero-ink) 20%, transparent);
-	--home-hero-overlay: color-mix(in oklch, var(--home-hero-surface) 72%, transparent);
-	--home-hero-shadow: color-mix(in oklch, var(--home-hero-surface) 78%, transparent);
+	--home-hero-overlay: color-mix(in oklch, var(--home-hero-surface) 16%, transparent);
+	--home-hero-shadow: color-mix(in oklch, var(--home-hero-ink) 24%, transparent);
 	position: relative;
 	width: 100vw;
 	height: 100svh;
@@ -26,6 +40,13 @@ html:has(.home-hero) #top-row {
 	background: var(--home-hero-surface);
 	color: var(--home-hero-ink);
 	contain: layout paint;
+	container-type: size;
+}
+
+:root.dark .home-hero {
+	/* 晴空原画不随全站暗色压黑；交换现有表面／文字令牌保持深蓝字可读。 */
+	--home-hero-ink: var(--page-bg);
+	--home-hero-surface: var(--deep-text);
 }
 
 /* 动效脚本接管前先隐藏首屏标题和联系按钮，避免静态 HTML 首帧闪现整段文字。 */
@@ -36,9 +57,22 @@ html:has(.home-hero) #top-row {
 	pointer-events: none;
 }
 
-/* hero 固定使用自身的近黑舞台（oklch(0.075)）+ 纯白墨水字，不随主题切换：
-   亮色页面里它是全屏对比区，暗色下与页面底色仅差 #0d0d0d→#101010 一档，肉眼无断层；
-   绑定 --page-bg 的旧方案反而把 ink 褪成浅灰、叠 72% 蒙版后整体发灰，已废弃 */
+.home-page--motion-pending:has(.home-hero__static) .home-hero__identity,
+.home-page--motion-pending:has(.home-hero__static) .home-hero__contact {
+	opacity: 1;
+	visibility: visible;
+}
+
+/* 云白／墨蓝取自全站变量；只保留薄蒙版，不压暗晴空插画。 */
+.home-hero__opening {
+	position: absolute;
+	inset: 0;
+	z-index: 30;
+	background: var(--home-hero-surface);
+	pointer-events: none;
+	transform: scaleY(0);
+	transform-origin: 50% 0%;
+}
 
 .home-hero__visual,
 .home-hero__backdrop,
@@ -51,20 +85,29 @@ html:has(.home-hero) #top-row {
 .home-hero__visual {
 	z-index: 0;
 	overflow: hidden;
+	/* 只铺满无人物的天空底层，原图仍保持小人像构图，不复制或放大人物。 */
+	background: url("/assets/images/home/silver-sky-clouds.5ae60b70e18e.webp") center / cover no-repeat;
 }
 
 .home-hero__backdrop {
 	z-index: 0;
-	opacity: 0;
-	visibility: hidden;
+	opacity: 1;
+	visibility: visible;
 }
 
 .home-hero__backdrop-image {
+	/* 透明前景与碎片终点共用 min(视口比例, 1)，不再叠加第二张天空。 */
+	--home-hero-art-render-width: min(100cqw, calc(100cqh * var(--home-hero-art-aspect)), var(--home-hero-art-width));
+	--home-hero-art-render-height: min(100cqh, calc(100cqw / var(--home-hero-art-aspect)), var(--home-hero-art-height));
+	position: absolute;
+	left: calc((100cqw - var(--home-hero-art-render-width)) * var(--home-hero-art-align-x));
+	top: calc((100cqh - var(--home-hero-art-render-height)) * var(--home-hero-art-align-y));
 	display: block;
-	width: 100%;
-	height: 100%;
-	object-fit: cover;
-	object-position: center;
+	width: var(--home-hero-art-render-width);
+	height: var(--home-hero-art-render-height);
+	object-fit: scale-down;
+	/* 与碎片拼合共用配置定位；保留原方向，不镜像或拉伸人物。 */
+	object-position: var(--home-hero-art-position-x) var(--home-hero-art-position-y);
 }
 
 .home-hero__mosaic-frame {
@@ -72,11 +115,12 @@ html:has(.home-hero) #top-row {
 	left: 50%;
 	bottom: clamp(1rem, 3vh, 2.75rem);
 	z-index: 1;
-	width: min(84vw, 90rem);
-	aspect-ratio: 2 / 1;
+	width: min(72vw, 92svh, 64rem);
+	aspect-ratio: var(--home-hero-art-aspect);
 	transform: translateX(-50%);
 	transform-origin: 50% 50%;
-	will-change: transform, opacity;
+	opacity: 0;
+	visibility: hidden;
 }
 
 .home-hero__mosaic-grid {
@@ -97,7 +141,6 @@ html:has(.home-hero) #top-row {
 		0
 	) rotate(var(--home-hero-tile-rotation)) scale(var(--home-hero-tile-scale));
 	filter: blur(var(--home-hero-tile-blur));
-	will-change: transform, opacity, filter;
 }
 
 .home-hero__mosaic-tile-image {
@@ -147,15 +190,17 @@ html:has(.home-hero) #top-row {
 .home-hero__identity {
 	position: absolute;
 	top: 0;
-	left: clamp(2rem, 4.5vw, 5rem);
+	right: var(--home-hero-dialogue-gutter);
 	z-index: 3;
 	display: flex;
-	height: 50svh;
-	max-width: calc(100vw - 4rem);
+	height: calc(100% - var(--home-hero-dialogue-height));
+	width: 44%;
 	flex-direction: column;
 	justify-content: center;
+	align-items: center;
+	gap: var(--space-2);
 	margin: 0;
-	will-change: transform, opacity;
+	text-align: center;
 }
 
 .home-hero__filter {
@@ -168,93 +213,185 @@ html:has(.home-hero) #top-row {
 .home-hero__title {
 	margin: 0;
 	font-family: var(--font-sans);
-	font-size: clamp(7.5rem, 10.8vw, 9.5rem);
-	font-weight: 760;
-	line-height: 1.08;
+	max-width: 100%;
+	font-size: var(--sky-title-size);
+	font-weight: 750;
+	line-height: 1.12;
 	letter-spacing: 0;
-	text-wrap: balance;
-	overflow: visible;
+	white-space: nowrap;
+	overflow: hidden;
 }
 
 .home-hero__title > span:first-child {
-	--home-hero-melt-size: 1.35rem;
-	--home-hero-melt-width: 0.72rem;
-	--home-hero-melt-gap: 0.34rem;
 	display: inline-block;
-	padding: 0.08em 0.18em 0.18em;
-	margin: -0.08em -0.18em -0.18em;
-	color: transparent;
-	background-image: repeating-linear-gradient(
-		45deg,
-		var(--home-hero-ink) 0 var(--home-hero-melt-width),
-		transparent var(--home-hero-melt-width) calc(var(--home-hero-melt-width) + var(--home-hero-melt-gap))
-	);
+	padding-bottom: 0.12em;
+}
+
+/* 单行文字保留可选择的真实文本；低饱和蓝只用于静态着色，不循环扫光。 */
+.home-hero__title-word {
+	display: block;
+	white-space: nowrap;
+	color: var(--sky-title-start);
+	background: linear-gradient(105deg, var(--sky-title-start), var(--sky-title-mid), var(--sky-title-end));
 	background-clip: text;
-	background-size: var(--home-hero-melt-size) var(--home-hero-melt-size);
-	filter: url("#home-hero-gooey");
-	animation: home-hero-melt 1.25s linear infinite;
+	-webkit-background-clip: text;
+	-webkit-text-fill-color: transparent;
+}
+
+.home-hero__name-badge {
+	position: relative;
+	display: inline-flex;
+	align-items: center;
+	justify-content: center;
+	min-height: var(--control-size);
+	min-width: var(--sky-badge-width);
+	max-width: 100%;
+	padding: var(--space-2) var(--space-3);
+	border: 1px solid var(--sky-border);
+	border-radius: var(--radius-small);
+	background: color-mix(in srgb, var(--sky-surface) 76%, transparent);
+	color: var(--sky-ink);
+	font: inherit;
+	font-size: var(--sky-badge-size);
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	line-height: 1.2;
+	cursor: pointer;
+}
+
+.home-hero__name-badge::before,
+.home-hero__name-badge::after {
+	content: "";
+	position: absolute;
+	width: var(--space-5);
+	height: var(--space-5);
+	border-color: var(--home-hero-border);
+	border-style: solid;
+	pointer-events: none;
+}
+
+.home-hero__name-badge::before {
+	right: calc(100% + var(--space-8));
+	bottom: var(--space-4);
+	border-width: 0 0 1px 1px;
+}
+
+.home-hero__name-badge::after {
+	left: calc(100% + var(--space-8));
+	bottom: var(--space-4);
+	border-width: 0 1px 1px 0;
+}
+
+.home-hero__name-badge:focus-visible {
+	outline: 2px solid var(--home-hero-ink);
+	outline-offset: var(--space-1);
 }
 
 .home-hero__occupation {
-	margin: var(--space-4) 0 0;
-	color: color-mix(in oklch, var(--home-hero-ink) 64%, transparent);
-	font-size: 2rem;
-	font-weight: 500;
+	margin: 0;
+	color: var(--sky-muted);
+	font-size: var(--sky-occupation-size);
+	font-weight: 550;
+	line-height: 1.15;
+	padding: 0.15em 0;
 	letter-spacing: 0;
+	overflow: hidden;
+}
+
+.home-hero__occupation > span {
+	display: inline-block;
+}
+
+.home-hero__interaction {
+	position: absolute;
+	inset-inline: 0;
+	bottom: 0;
+	z-index: 7;
+	display: grid;
+	grid-template-columns: var(--home-hero-sticker-width) minmax(0, 1fr) var(--home-hero-signature-width);
+	grid-template-rows: minmax(0, 1fr);
+	column-gap: var(--home-hero-column-gap);
+	height: var(--home-hero-dialogue-height);
+	padding-inline: var(--home-hero-dialogue-gutter);
+	isolation: isolate;
+}
+
+/* 同一幅原画贯穿底带，浅色梯度只负责文字对比，不另铺纯白区域。 */
+.home-hero__interaction::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	border-top: 1px solid var(--home-hero-border-soft);
+	background-image:
+		linear-gradient(color-mix(in oklch, var(--home-hero-ink) 5%, transparent) 1px, transparent 1px),
+		linear-gradient(90deg, color-mix(in oklch, var(--home-hero-ink) 5%, transparent) 1px, transparent 1px),
+		linear-gradient(180deg, color-mix(in oklch, var(--home-hero-surface) 60%, transparent), color-mix(in oklch, var(--home-hero-surface) 84%, transparent));
+	background-size: var(--home-hero-grid-step) var(--home-hero-grid-step), var(--home-hero-grid-step) var(--home-hero-grid-step), 100% 100%;
+	pointer-events: none;
 }
 
 .home-hero__contact {
 	position: absolute;
-	right: clamp(2.5rem, 6vw, 8rem);
-	bottom: clamp(3rem, 8vh, 7rem);
-	z-index: 4;
+	top: calc(var(--control-size) + var(--space-8));
+	left: var(--space-4);
+	bottom: calc(var(--home-hero-dialogue-height) + var(--space-4));
+	z-index: 8;
 	display: flex;
-	width: min(36vw, 38rem);
-	min-height: clamp(11rem, 24vh, 18rem);
-	align-items: flex-end;
-	justify-content: flex-end;
-	text-align: right;
-	will-change: transform, opacity;
+	flex-direction: column;
+	align-items: center;
+	justify-content: space-between;
+	width: var(--home-hero-rail-width);
+	text-align: center;
 }
 
 .home-hero__contact-link {
-	display: block;
+	display: flex;
+	flex-direction: column;
+	align-items: center;
+	gap: var(--space-4);
 	margin: 0;
-	color: transparent;
+	color: var(--home-hero-ink);
 	font-family: var(--font-sans);
-	font-size: clamp(3.75rem, 6.6vw, 8rem);
-	font-weight: 760;
-	line-height: 0.88;
+	font-weight: 900;
+	line-height: 1.12;
 	letter-spacing: 0;
 	text-decoration: none;
 }
 
 .home-hero__contact-platform,
 .home-hero__contact-handle {
-	--home-hero-melt-size: 1.1rem;
-	--home-hero-melt-width: 0.6rem;
-	--home-hero-melt-gap: 0.28rem;
 	display: block;
-	padding: 0.08em 0.12em 0.16em;
-	margin: -0.08em -0.12em -0.16em;
-	background-image: repeating-linear-gradient(
-		45deg,
-		var(--home-hero-ink) 0 var(--home-hero-melt-width),
-		transparent var(--home-hero-melt-width) calc(var(--home-hero-melt-width) + var(--home-hero-melt-gap))
-	);
-	background-clip: text;
-	background-size: var(--home-hero-melt-size) var(--home-hero-melt-size);
-	filter: url("#home-hero-gooey");
-	animation: home-hero-melt 1.25s linear infinite;
+	color: var(--home-hero-ink);
+	writing-mode: vertical-rl;
 }
 
 .home-hero__contact-platform {
-	font-size: 0.48em;
-	line-height: 1;
+	font-size: clamp(1.5rem, 2vw, 2.2rem);
+	letter-spacing: 0.28em;
 }
 
-.home-hero__contact-handle {
+.home-hero__contact-handle,
+.home-hero__contact-status {
+	font-size: 0.7rem;
+	letter-spacing: 0.3em;
+	writing-mode: vertical-rl;
 	white-space: nowrap;
+}
+
+.home-hero__contact-pill {
+	font-size: 0.65rem;
+	font-weight: 800;
+	letter-spacing: 0.18em;
+}
+
+.home-hero__contact-diamond {
+	color: var(--sky-title-start);
+	font-size: 0.7rem;
+}
+
+.home-hero__name-badge-text {
+	color: var(--sky-ink);
 }
 
 .home-hero__contact-link[href]:hover,
@@ -360,7 +497,8 @@ html:has(.home-hero) #top-row {
 /* 风吹散落文字（Scatter random）：拆字后宿主只负责占位，字符承载渐变与 gooey 效果 */
 .home-hero__title > span:first-child.home-hero__fly-host,
 .home-hero__contact-platform.home-hero__fly-host,
-.home-hero__contact-handle.home-hero__fly-host {
+.home-hero__contact-handle.home-hero__fly-host,
+.home-hero__name-badge-text.home-hero__fly-host {
 	position: relative;
 	color: transparent;
 	background-image: none;
@@ -386,19 +524,14 @@ html:has(.home-hero) #top-row {
 
 .home-hero__fly-char {
 	position: absolute;
-	color: transparent;
+	color: var(--home-hero-ink);
 	white-space: nowrap;
-	background-image: repeating-linear-gradient(
-		45deg,
-		var(--home-hero-ink) 0 var(--home-hero-melt-width),
-		transparent var(--home-hero-melt-width) calc(var(--home-hero-melt-width) + var(--home-hero-melt-gap))
-	);
-	background-clip: text;
-	background-size: var(--home-hero-melt-size) var(--home-hero-melt-size);
-	background-position: var(--home-hero-fly-bg-x, 0px) var(--home-hero-fly-bg-y, 0px);
-	filter: url("#home-hero-gooey");
-	animation: home-hero-melt-fly 1.25s linear infinite;
-	will-change: transform, opacity;
+}
+
+@media (min-width: 769px) and (max-width: 1023px) {
+	.home-hero {
+		--home-hero-column-gap: var(--space-4);
+	}
 }
 
 @keyframes home-hero-melt-fly {
@@ -443,7 +576,7 @@ html:has(.home-hero) #top-row {
 	}
 
 	.home-hero__title {
-		font-size: 4.5rem;
+		font-size: 3rem;
 	}
 
 	.home-hero__occupation {
@@ -484,6 +617,9 @@ html:has(.home-hero) #top-row {
 }
 
 @media (prefers-reduced-motion: reduce) {
+	.home-hero__opening {
+		display: none;
+	}
 	.home-hero {
 		min-height: 32rem;
 	}
@@ -512,5 +648,24 @@ html:has(.home-hero) #top-row {
 
 	.home-hero__rain {
 		display: none;
+	}
+
+	.home-hero__name-badge-text,
+	.home-hero__name-badge-text .home-hero__fly-char {
+		animation: none;
+	}
+}
+
+@media (forced-colors: active) {
+	.home-hero__title-word {
+		background: none;
+		-webkit-text-fill-color: CanvasText;
+	}
+
+	.home-hero__name-badge-text:not(.home-hero__fly-host),
+	.home-hero__name-badge-text .home-hero__fly-char {
+		color: CanvasText;
+		background-image: none;
+		animation: none;
 	}
 }

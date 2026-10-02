@@ -16,7 +16,6 @@ src/config/
 ├── footerConfig.ts            # 页脚配置
 ├── expressiveCodeConfig.ts    # 代码高亮配置
 ├── fontConfig.ts              # 字体配置
-├── sidebarConfig.ts           # 侧边栏配置
 ├── navBarConfig.ts            # 导航栏配置
 ├── pioConfig.ts               # 看板娘模型配置（Spine / Live2D）
 ├── friendsConfig.ts           # 友链配置
@@ -34,14 +33,10 @@ src/config/
 
 ### 推荐：使用配置索引（统一导入）
 ```typescript
-import { siteConfig, homeConfig } from '../config';
+import { siteConfig, homeConfig } from "@/config";
 ```
 
-### 直接导入单个配置
-```typescript
-import { siteConfig } from '../config/siteConfig';
-import { homeConfig } from '../config/homeConfig';
-```
+配置内部可以引用同目录文件；页面、组件和工具统一使用 `@/config` 的索引导出，不照抄历史代码的单文件直连导入。
 
 ## 📋 配置文件列表
 
@@ -54,7 +49,6 @@ import { homeConfig } from '../config/homeConfig';
 - `footerConfig.ts` - 页脚配置
 - `expressiveCodeConfig.ts` - 代码高亮配置（主题等）
 - `fontConfig.ts` - 字体配置（字体族、大小等）
-- `sidebarConfig.ts` - 侧边栏配置（导出 `sidebarLayoutConfig`）
 - `navBarConfig.ts` - 导航栏配置（导出 `navBarConfig`）
 - `pioConfig.ts` - 看板娘模型配置（导出 `spineModelConfig`、`live2dModelConfig`）
 - `friendsConfig.ts` - 友链配置（导出 `friendsPageConfig`、`friendsConfig`、`getEnabledFriends`）
@@ -66,5 +60,4 @@ import { homeConfig } from '../config/homeConfig';
 - `collectionsApiConfig.ts` - 收藏 API 配置
 - `plantumlConfig.ts` - PlantUML 图表配置
 
-
-```
+页面显示由 `siteConfig.pages` 控制；导航由 `navBarConfig.ts` 同步生成。当前友链、音乐已启用并位于关于菜单，友链列表初始为空。维护友链申请表单与处理流程时，还需同步核对根目录 `.github/` 下的三个友链申请文件。正文维护与发布步骤见项目根目录 README。

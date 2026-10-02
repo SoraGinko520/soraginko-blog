@@ -1,13 +1,22 @@
 ---
 import Icon from "@components/common/Icon.astro";
 import FooterSignature from "@components/layout/FooterSignature.astro";
+import dayjs from "dayjs";
 import { footerConfig, homeConfig, siteConfig } from "@/config";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
-import { getSortedPosts } from "@/utils/content-utils";
+import { formatDateI18n } from "@/utils/date-utils";
 import { url } from "@/utils/url-utils";
 
-const currentYear = new Date().getFullYear();
+const FOOTER_TIME = {
+	millisecondsPerSecond: 1_000,
+	secondsPerMinute: 60,
+	secondsPerHour: 3_600,
+	secondsPerDay: 86_400,
+};
+const buildDate = dayjs();
+const buildTimestamp = buildDate.valueOf();
+const currentYear = buildDate.year();
 const siteStartDate = siteConfig.siteStartDate || "";
 const { socialLinks, beian, poweredBy } = footerConfig;
 const bioText = Array.isArray(homeConfig.bio)
@@ -20,38 +29,39 @@ function getSiteStartTimestamp(value: string): number | null {
 	const normalizedValue = /^\d{4}-\d{2}-\d{2}$/.test(value)
 		? `${value}T00:00:00+08:00`
 		: value;
-	const timestamp = Date.parse(normalizedValue);
+	const parsedDate = dayjs(normalizedValue);
+	if (!parsedDate.isValid()) return null;
+	// Day.js 会把 2 月 31 日等日期顺延，配置日期必须保持原有年月日。
+	const calendarDate = value.slice(0, 10);
+	if (
+		!/^\d{4}-\d{2}-\d{2}$/.test(calendarDate) ||
+		dayjs(calendarDate).format("YYYY-MM-DD") !== calendarDate
+	)
+		return null;
+	const timestamp = parsedDate.valueOf();
 
-	return Number.isNaN(timestamp) ? null : timestamp;
+	return timestamp > buildTimestamp ? null : timestamp;
 }
 
 const startTimestamp = getSiteStartTimestamp(siteStartDate);
-const initialRunningDays =
-	startTimestamp === null
-		? null
-		: Math.max(0, Math.floor((Date.now() - startTimestamp) / 86_400_000));
-
-const posts = await getSortedPosts();
-const latestPost = posts.reduce((latest, post) => {
-	if (!latest) return post;
-	return post.data.published > latest.data.published ? post : latest;
-}, posts[0]);
-const lastPostDate = latestPost
-	? latestPost.data.published.toISOString()
-	: null;
-
 const runningTimeText = i18n(I18nKey.footerRunningTime);
 const lastUpdateText = i18n(I18nKey.footerLastUpdate);
-const todayText = i18n(I18nKey.today);
+const startPendingText = i18n(I18nKey.footerStartPending);
+const updatedTodayText = i18n(I18nKey.footerUpdatedToday);
 
 function formatInitialRunningTime(
 	template: string,
 	elapsedSeconds: number,
 ): string {
-	const days = Math.floor(elapsedSeconds / 86_400);
-	const hours = Math.floor((elapsedSeconds % 86_400) / 3_600);
-	const minutes = Math.floor((elapsedSeconds % 3_600) / 60);
-	const seconds = elapsedSeconds % 60;
+	const days = Math.floor(elapsedSeconds / FOOTER_TIME.secondsPerDay);
+	const hours = Math.floor(
+		(elapsedSeconds % FOOTER_TIME.secondsPerDay) / FOOTER_TIME.secondsPerHour,
+	);
+	const minutes = Math.floor(
+		(elapsedSeconds % FOOTER_TIME.secondsPerHour) /
+			FOOTER_TIME.secondsPerMinute,
+	);
+	const seconds = elapsedSeconds % FOOTER_TIME.secondsPerMinute;
 
 	return template
 		.replace("{days}", days.toString())
@@ -62,31 +72,24 @@ function formatInitialRunningTime(
 
 const initialRunningTime =
 	startTimestamp === null
-		? ""
+		? startPendingText
 		: formatInitialRunningTime(
 				runningTimeText,
-				Math.max(0, Math.floor((Date.now() - startTimestamp) / 1_000)),
+				Math.floor(
+					(buildTimestamp - startTimestamp) / FOOTER_TIME.millisecondsPerSecond,
+				),
 			);
-
-function getInitialLastUpdateText(value: string | null): string | null {
-	if (!value) return null;
-
-	const timestamp = Date.parse(value);
-	if (Number.isNaN(timestamp)) return null;
-
-	const days = Math.max(0, Math.floor((Date.now() - timestamp) / 86_400_000));
-	return days === 0
-		? todayText
-		: lastUpdateText.replace("{days}", days.toString());
-}
-
-const initialLastUpdateText = getInitialLastUpdateText(lastPostDate);
 
 // mailto:/tel: 链接不在新标签打开
 const opensInNewTab = (href: string) => !/^(mailto:|tel:)/i.test(href);
 ---
 
-<footer class="footer site-footer" data-site-footer>
+<footer
+	class="footer site-footer"
+	data-site-footer
+	data-start-timestamp={startTimestamp ?? undefined}
+	data-updated-timestamp={buildTimestamp}
+>
 	<div class="site-footer__inner">
 		<div class="site-footer__primary">
 			<section class="site-footer__brand" aria-label={homeConfig.name}>
@@ -174,43 +177,35 @@ const opensInNewTab = (href: string) => !/^(mailto:|tel:)/i.test(href);
 			</div>
 
 			<div class="site-footer__status">
-				{initialRunningDays !== null && (
-					<p class="site-footer__status-line">
-						<Icon name="material-symbols:calendar-clock-outline" is:inline aria-hidden="true" />
-						<span data-footer-running-time data-template={runningTimeText}>{initialRunningTime}</span>
-					</p>
-				)}
-				{initialLastUpdateText && (
-					<p class="site-footer__status-line">
-						<Icon name="mingcute:heartbeat-line" is:inline aria-hidden="true" />
-						<span data-footer-last-update data-template={lastUpdateText} data-today={todayText}>{initialLastUpdateText}</span>
-					</p>
-				)}
+				<p class="site-footer__status-line">
+					<Icon name="material-symbols:calendar-clock-outline" is:inline aria-hidden="true" />
+					<span data-footer-running-time data-template={runningTimeText} data-pending={startPendingText}>{initialRunningTime}</span>
+				</p>
+				<p class="site-footer__status-line">
+					<Icon name="mingcute:heartbeat-line" is:inline aria-hidden="true" />
+					<span data-footer-last-update data-template={lastUpdateText} data-today={updatedTodayText} title={formatDateI18n(buildDate.toDate(), true)}>{updatedTodayText}</span>
+				</p>
 			</div>
 		</div>
 	</div>
 </footer>
 
-<script is:inline define:vars={{ siteStartDate, lastPostDate, runningTimeText, lastUpdateText, todayText }}>
-	const footer = document.querySelector("[data-site-footer]");
+<script>
+	import dayjs from "dayjs";
+	import { definePersistentIsland } from "@/utils/swup-lifecycle";
 
-	function parseSiteStartTimestamp(value) {
-		if (!value) return null;
+	const FOOTER_TIME = {
+		millisecondsPerSecond: 1_000,
+		secondsPerMinute: 60,
+		secondsPerHour: 3_600,
+		secondsPerDay: 86_400,
+	};
 
-		const normalizedValue = /^\d{4}-\d{2}-\d{2}$/.test(value)
-			? `${value}T00:00:00+08:00`
-			: value;
-		const timestamp = Date.parse(normalizedValue);
-
-		return Number.isNaN(timestamp) ? null : timestamp;
-	}
-
-	function formatRunningTime(template, elapsedSeconds) {
-		const days = Math.floor(elapsedSeconds / 86_400);
-		const hours = Math.floor((elapsedSeconds % 86_400) / 3_600);
-		const minutes = Math.floor((elapsedSeconds % 3_600) / 60);
-		const seconds = elapsedSeconds % 60;
-
+	function formatRunningTime(template: string, elapsedSeconds: number): string {
+		const days = Math.floor(elapsedSeconds / FOOTER_TIME.secondsPerDay);
+		const hours = Math.floor((elapsedSeconds % FOOTER_TIME.secondsPerDay) / FOOTER_TIME.secondsPerHour);
+		const minutes = Math.floor((elapsedSeconds % FOOTER_TIME.secondsPerHour) / FOOTER_TIME.secondsPerMinute);
+		const seconds = elapsedSeconds % FOOTER_TIME.secondsPerMinute;
 		return template
 			.replace("{days}", days.toString())
 			.replace("{hours}", hours.toString())
@@ -218,60 +213,78 @@ const opensInNewTab = (href: string) => !/^(mailto:|tel:)/i.test(href);
 			.replace("{seconds}", seconds.toString());
 	}
 
-	if (footer instanceof HTMLElement) {
-		const runningTimeElement = footer.querySelector("[data-footer-running-time]");
-		const lastUpdateElement = footer.querySelector("[data-footer-last-update]");
-		const startTimestamp = parseSiteStartTimestamp(siteStartDate);
-		const lastPostTimestamp = lastPostDate ? Date.parse(lastPostDate) : Number.NaN;
+	definePersistentIsland("footer", () => {
+		const footer = document.querySelector<HTMLElement>("[data-site-footer]");
+		if (!footer) return;
+		const runningTimeElement = footer.querySelector<HTMLElement>("[data-footer-running-time]");
+		const lastUpdateElement = footer.querySelector<HTMLElement>("[data-footer-last-update]");
+		const startTimestamp = footer.dataset.startTimestamp ? Number(footer.dataset.startTimestamp) : Number.NaN;
+		const updatedTimestamp = footer.dataset.updatedTimestamp ? Number(footer.dataset.updatedTimestamp) : Number.NaN;
+		let intervalId: number | undefined;
+		let isInView = false;
+		let signatureObserver: IntersectionObserver | null = null;
+		const signature = footer.querySelector<SVGElement>("[data-footer-signature]");
 
-		function updateFooterStats() {
-			const now = Date.now();
-
-			if (runningTimeElement && startTimestamp !== null) {
-				const template = runningTimeElement.dataset.template || runningTimeText;
-				const elapsedSeconds = Math.max(0, Math.floor((now - startTimestamp) / 1_000));
-				runningTimeElement.textContent = formatRunningTime(template, elapsedSeconds);
+		const updateFooterStats = () => {
+			const now = dayjs().valueOf();
+			if (runningTimeElement) {
+				const template = runningTimeElement.dataset.template || "";
+				runningTimeElement.textContent = Number.isSafeInteger(startTimestamp) && startTimestamp <= now
+					? formatRunningTime(template, Math.floor((now - startTimestamp) / FOOTER_TIME.millisecondsPerSecond))
+					: runningTimeElement.dataset.pending || "";
 			}
-
-			if (lastUpdateElement && !Number.isNaN(lastPostTimestamp)) {
-				const daysSinceLastUpdate = Math.max(
-					0,
-					Math.floor((now - lastPostTimestamp) / 86_400_000),
-				);
-				const template = lastUpdateElement.dataset.template || lastUpdateText;
-				const todayLabel = lastUpdateElement.dataset.today || todayText;
-
-				lastUpdateElement.textContent =
-					daysSinceLastUpdate === 0
-						? todayLabel
-						: template.replace("{days}", daysSinceLastUpdate.toString());
+			// 构建时间由服务端生成；本机时钟若落后，不把未来时间强行算成 0 天。
+			if (lastUpdateElement && Number.isSafeInteger(updatedTimestamp) && updatedTimestamp <= now) {
+				const days = Math.floor((now - updatedTimestamp) / (FOOTER_TIME.secondsPerDay * FOOTER_TIME.millisecondsPerSecond));
+				lastUpdateElement.textContent = days === 0
+					? lastUpdateElement.dataset.today || ""
+					: (lastUpdateElement.dataset.template || "").replace("{days}", days.toString());
 			}
-		}
+		};
+		const stop = () => {
+			if (intervalId !== undefined) window.clearInterval(intervalId);
+			intervalId = undefined;
+		};
+		const syncPlayback = () => {
+			stop();
+			if (!isInView || document.hidden) return;
+			updateFooterStats();
+			intervalId = window.setInterval(updateFooterStats, FOOTER_TIME.millisecondsPerSecond);
+		};
+		const footerObserver = new IntersectionObserver((entries) => {
+			isInView = entries.some((entry) => entry.isIntersecting);
+			syncPlayback();
+		});
+		footerObserver.observe(footer);
 
-		function initSignature() {
-			const signature = footer.querySelector("[data-footer-signature]");
-			const reducedMotion = window.matchMedia(
-				"(prefers-reduced-motion: reduce)",
-			).matches;
-
-			if (!signature || reducedMotion || !("IntersectionObserver" in window)) return;
-
+		const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+		if (signature && !reducedMotion) {
 			footer.classList.add("is-signature-pending");
-			const observer = new IntersectionObserver(
-				(entries) => {
-					if (!entries.some((entry) => entry.isIntersecting)) return;
-
-					footer.classList.add("is-signature-drawn");
-					observer.disconnect();
-				},
-				{ threshold: 0.35 },
-			);
-
-			observer.observe(signature);
+			signatureObserver = new IntersectionObserver((entries) => {
+				if (!entries.some((entry) => entry.isIntersecting)) return;
+				footer.classList.add("is-signature-drawn");
+				signatureObserver?.disconnect();
+			}, { threshold: 0.35 });
+			signatureObserver.observe(signature);
 		}
 
-		updateFooterStats();
-		window.setInterval(updateFooterStats, 1_000);
-		initSignature();
-	}
+		const onPageShow = (event: PageTransitionEvent) => {
+			if (!event.persisted) return;
+			footerObserver.observe(footer);
+			if (signature && !footer.classList.contains("is-signature-drawn")) signatureObserver?.observe(signature);
+		};
+		const onPageHide = (event: PageTransitionEvent) => {
+			stop();
+			isInView = false;
+			footerObserver.disconnect();
+			signatureObserver?.disconnect();
+			if (event.persisted) return;
+			document.removeEventListener("visibilitychange", syncPlayback);
+			window.removeEventListener("pageshow", onPageShow);
+			window.removeEventListener("pagehide", onPageHide);
+		};
+		document.addEventListener("visibilitychange", syncPlayback);
+		window.addEventListener("pageshow", onPageShow);
+		window.addEventListener("pagehide", onPageHide);
+	});
 </script>

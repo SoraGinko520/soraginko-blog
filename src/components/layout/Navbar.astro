@@ -62,7 +62,7 @@ if (isLocalSrcLogo) {
 	<div class="navbar-segments">
 		<!-- 左段：logo + 标题（滚动收缩成球） -->
 		<div class="navbar-seg navbar-seg--left">
-			<a href={url('/')} class="navbar-logo scale-animation flex items-center text-(--deep-text)">
+			<a href={url('/')} class="navbar-logo scale-animation flex items-center text-(--deep-text)" aria-label={i18n(I18nKey.home)}>
 				{siteConfig.navbar.logo?.type === "icon" ? (
 					<Icon name={siteConfig.navbar.logo.value || "material-symbols:home-pin-outline"} is:inline class="text-[1.35rem] flex-shrink-0" />
 				) : siteConfig.navbar.logo?.type === "image" && logoImg ? (

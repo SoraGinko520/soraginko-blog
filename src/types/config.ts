@@ -77,6 +77,8 @@ export type SiteConfig = {
 	// 页面开关配置
 	pages: {
 		friends: boolean; // 友链页面开关
+		fcircle: boolean; // 友链朋友圈页面开关
+		projects: boolean; // 项目列表与详情页面开关
 		sponsor: boolean; // 赞助页面开关
 		guestbook: boolean; // 留言板页面开关
 		gallery: boolean; // 相册页面开关
@@ -100,7 +102,7 @@ export type SiteConfig = {
 		microsoftClarityId?: string; // Microsoft Clarity ID
 		umamiAnalytics?: {
 			websiteId?: string; // Umami Website ID
-			shareId?: string; // Umami 分享页 ID，用于客户端直接获取统计
+			shareId?: string; // Umami Cloud 公开分享页 ID，仅用于公开统计链接
 			scriptUrl?: string; // Umami JS地址，支持使用自建
 			pageviews?: {
 				enabled?: boolean; // 是否使用 Umami 在文章详情和列表中展示页面浏览量
@@ -203,6 +205,9 @@ export enum LinkPreset {
 	Music = 18,
 	NavLinks = 19,
 	Life = 20,
+	Projects = 21,
+	Social = 22,
+	Fcircle = 23,
 }
 
 export type NavBarLink = {
@@ -290,23 +295,29 @@ export type HomeBlindsConfig = {
 	};
 };
 
-/** galgame 对话框：单句台词 */
+export type HeroStickerExpression = "idle" | "blink" | "smile" | "greet";
+
+export type HeroReactionAction = "greet" | "nod" | "tilt";
+
+/** 首屏预设互动：逐句台词与一次角色回应。 */
 export type HeroDialogueLine = {
 	/** 说话者：host=站长 / visitor=访客(你)，默认 host。左上角名牌随之切换 */
 	speaker?: "host" | "visitor";
 	/** 台词文本（逐字打字机播放） */
 	text: string;
+	/** 对应的一次性角色动作。 */
+	action?: HeroReactionAction;
+	/** 对应的图集表情。 */
+	expression?: HeroStickerExpression;
 };
 
-/** galgame 对话框：话题（点击进入其逐句台词） */
+/** 话题菜单选项，末句播放完后返回菜单。 */
 export type HeroDialogueTopic = {
-	/** 话题菜单标题，如「关于我」 */
 	title: string;
-	/** 该话题的逐句台词 */
 	lines: HeroDialogueLine[];
 };
 
-/** 首页 Hero galgame 对话框配置（写死暗黑主题，config 驱动内容） */
+/** 首页 Hero 预设互动配置。 */
 export type HeroDialogueConfig = {
 	/** 是否启用对话框；关闭则 Hero 不渲染对话框 */
 	enabled?: boolean;
@@ -315,15 +326,14 @@ export type HeroDialogueConfig = {
 		host?: string; // 站长名
 		visitor?: string; // 访客名，如「访客」
 	};
-	/** 默认展示的简介台词，逐句播放；末句后可打开话题菜单 */
+	/** 默认简介逐句播放，末句后进入话题菜单。 */
 	intro: HeroDialogueLine[];
-	/** 话题列表；点击某话题进入其逐句台词，末句后返回菜单 */
-	topics: HeroDialogueTopic[];
-	/** 话题菜单提示语，默认「想聊点什么？」 */
+	/** 复用上游对话的话题菜单与结束返回交互。 */
+	topics?: HeroDialogueTopic[];
 	menuTitle?: string;
 	/** 打字机速度（毫秒/字），默认 45 */
 	typingSpeed?: number;
-	/** 自动播放时每句停留时间（毫秒），默认 1600 */
+	/** 自动播放时整句显示后的停留时间（毫秒）。 */
 	autoDelay?: number;
 };
 
@@ -371,24 +381,20 @@ export type HeroContactConfig = {
 export type HeroStickerConfig = {
 	image: string;
 	alt: string;
-	eye: {
-		xPercent: number;
-		yPercent: number;
-		travelXPercent: number;
-		travelYPercent: number;
-	};
-	rightEye: {
-		xPercent: number;
-		yPercent: number;
-	};
-	mouth: {
-		xPercent: number;
-		yPercent: number;
-		widthPercent: number;
-		heightPercent: number;
-		rotation: number;
-		travelScale: number;
-	};
+	/** 同尺寸表情帧的边长（像素）。 */
+	frameSize: number;
+	/** 横向图集的表情帧数量。 */
+	frameCount: number;
+};
+
+/** 桌面首屏与碎片落点共用的原画尺寸、scale-down 定位。 */
+export type HeroArtworkConfig = {
+	width: number;
+	height: number;
+	/** 原方向图片的 object-position 横向比例（0–1）。 */
+	positionX: number;
+	/** 原方向图片的 object-position 纵向比例（0–1）。 */
+	positionY: number;
 };
 
 export type HomeConfig = {
@@ -399,10 +405,13 @@ export type HomeConfig = {
 	bio?: string | string[];
 	hero: {
 		backgroundImage: string;
+		/** 仅首屏互动身份行使用，不替换全站头像。 */
+		authorAvatarImage: string;
+		artwork: HeroArtworkConfig;
 		mosaic: HeroMosaicConfig;
 		contact?: HeroContactConfig;
 		sticker: HeroStickerConfig;
-		/** galgame 对话框（写死暗黑主题）。配置后替代底部简介气泡 */
+		/** 首屏按次预设互动。 */
 		dialogue?: HeroDialogueConfig;
 		/** 玻璃雨珠 + 撞击水花动效，移动端自动降低密度。 */
 		rain?: {
@@ -765,6 +774,7 @@ export type FriendLink = {
 	imgurl: string; // 头像图片URL
 	desc: string; // 友链描述
 	siteurl: string; // 友链地址
+	feedUrl?: string; // 可选 RSS / Atom 地址，仅用于友链朋友圈
 	image?: string; // 封面图片URL（可选，不填则卡片显示无图形态）
 	tags?: string[]; // 标签数组
 	weight: number; // 权重，数字越大排序越靠前

@@ -1,91 +1,144 @@
-export function initHomeHeroSticker(hero: HTMLElement) {
+import { gsap } from "gsap";
+import type {
+	HeroDialogueLine,
+	HeroReactionAction,
+	HeroStickerExpression,
+} from "@/types/config";
+
+const STICKER_EXPRESSIONS: HeroStickerExpression[] = [
+	"idle",
+	"blink",
+	"smile",
+	"greet",
+];
+const STICKER_REACTION = {
+	entryDuration: 0.38,
+	returnDuration: 0.82,
+	blinkHold: 0.18,
+	ease: "power2.inOut",
+	poses: {
+		greet: { xPercent: 1.5, yPercent: -1, rotation: -3, scale: 1.015 },
+		nod: { xPercent: 0, yPercent: 1.2, rotation: 1, scale: 0.985 },
+		tilt: { xPercent: -1.2, yPercent: 0, rotation: 3.5, scale: 1 },
+	} satisfies Record<HeroReactionAction, gsap.TweenVars>,
+};
+
+export function initHomeHeroSticker(hero: HTMLElement): {
+	playReaction: (line: HeroDialogueLine) => void;
+	setSceneVisible: (visible: boolean) => void;
+	reset: () => void;
+	destroy: () => void;
+} {
 	const sticker = hero.querySelector<HTMLElement>("[data-hero-sticker]");
-	const features = Array.from(
-		sticker?.querySelectorAll<HTMLElement>("[data-hero-sticker-feature]") ?? [],
+	const image = sticker?.querySelector<HTMLImageElement>(
+		"[data-hero-sticker-image]",
 	);
-	if (!sticker || features.length === 0) return () => undefined;
+	if (!sticker || !image) {
+		return {
+			playReaction: () => undefined,
+			setSceneVisible: () => undefined,
+			reset: () => undefined,
+			destroy: () => undefined,
+		};
+	}
 
+	const frameCount = Number.parseInt(
+		sticker.dataset.frameCount ?? String(STICKER_EXPRESSIONS.length),
+		10,
+	);
 	const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-	const travelX = Number.parseFloat(sticker.dataset.eyeTravelX ?? "0");
-	const travelY = Number.parseFloat(sticker.dataset.eyeTravelY ?? "0");
 	const abortController = new AbortController();
-	let currentX = 0;
-	let currentY = 0;
-	let targetX = 0;
-	let targetY = 0;
-	let animationFrame = 0;
+	let reaction: gsap.core.Timeline | null = null;
+	let isSceneVisible = false;
 
-	const render = () => {
-		currentX += (targetX - currentX) * 0.16;
-		currentY += (targetY - currentY) * 0.16;
-		features.forEach((feature) => {
-			const motionScale = Number.parseFloat(feature.dataset.motionScale ?? "1");
-			const scale = Number.isFinite(motionScale) ? motionScale : 1;
-			feature.style.setProperty(
-				"--home-hero-feature-shift-x",
-				`${(currentX * scale).toFixed(2)}px`,
-			);
-			feature.style.setProperty(
-				"--home-hero-feature-shift-y",
-				`${(currentY * scale).toFixed(2)}px`,
-			);
+	const setExpression = (expression: HeroStickerExpression): void => {
+		const frameIndex = STICKER_EXPRESSIONS.indexOf(expression);
+		sticker.dataset.expression = expression;
+		gsap.set(image, { xPercent: -(frameIndex * 100) / frameCount });
+	};
+
+	const stopMovement = (): void => {
+		reaction?.kill();
+		reaction = null;
+		gsap.set(sticker, { clearProps: "transform,willChange" });
+	};
+
+	const reset = (): void => {
+		stopMovement();
+		setExpression("idle");
+	};
+
+	const playReaction = (line: HeroDialogueLine): void => {
+		reset();
+		if (!isSceneVisible || document.visibilityState !== "visible") return;
+		const expression = line.expression ?? "idle";
+		setExpression(expression);
+		if (reducedMotion.matches) return;
+		const shouldGreetThenSmile =
+			line.action === "greet" && expression === "smile";
+		if (shouldGreetThenSmile) setExpression("greet");
+
+		// 每次点击只保留一段位移回应；图集切帧不测量布局，也不伪造口型。
+		sticker.style.willChange = "transform";
+		reaction = gsap.timeline({
+			defaults: { ease: STICKER_REACTION.ease },
+			onComplete: () => {
+				reaction = null;
+				gsap.set(sticker, { clearProps: "transform,willChange" });
+				setExpression("idle");
+			},
 		});
-		if (
-			Math.abs(targetX - currentX) > 0.01 ||
-			Math.abs(targetY - currentY) > 0.01
-		) {
-			animationFrame = requestAnimationFrame(render);
-			return;
+		reaction
+			.to(sticker, {
+				...STICKER_REACTION.poses[line.action ?? "tilt"],
+				duration: STICKER_REACTION.entryDuration,
+			})
+			.to(sticker, {
+				xPercent: 0,
+				yPercent: 0,
+				rotation: 0,
+				scale: 1,
+				duration: STICKER_REACTION.returnDuration,
+			});
+		if (expression === "blink") {
+			reaction.call(
+				() => setExpression("idle"),
+				[],
+				STICKER_REACTION.blinkHold,
+			);
 		}
-		animationFrame = 0;
+		if (shouldGreetThenSmile) {
+			reaction.call(
+				() => setExpression("smile"),
+				[],
+				STICKER_REACTION.entryDuration,
+			);
+		}
 	};
 
-	const scheduleRender = () => {
-		if (!animationFrame) animationFrame = requestAnimationFrame(render);
-	};
-
-	const reset = () => {
-		targetX = 0;
-		targetY = 0;
-		scheduleRender();
-	};
-
-	window.addEventListener(
-		"pointermove",
-		(event) => {
-			if (reducedMotion.matches) return;
-			const bounds = sticker.getBoundingClientRect();
-			if (bounds.width === 0 || bounds.height === 0) return;
-			const normalizedX =
-				(event.clientX - (bounds.left + bounds.width / 2)) / (bounds.width / 2);
-			const normalizedY =
-				(event.clientY - (bounds.top + bounds.height / 2)) /
-				(bounds.height / 2);
-			const length = Math.max(1, Math.hypot(normalizedX, normalizedY));
-			targetX = (normalizedX / length) * bounds.width * (travelX / 100);
-			targetY = (normalizedY / length) * bounds.height * (travelY / 100);
-			scheduleRender();
-		},
-		{ passive: true, signal: abortController.signal },
-	);
-	window.addEventListener("blur", reset, { signal: abortController.signal });
 	document.addEventListener(
-		"pointerout",
-		(event) => {
-			if (!event.relatedTarget) reset();
+		"visibilitychange",
+		() => {
+			if (document.visibilityState !== "visible") reset();
 		},
 		{ signal: abortController.signal },
 	);
-	reducedMotion.addEventListener("change", reset, {
+	reducedMotion.addEventListener("change", stopMovement, {
 		signal: abortController.signal,
 	});
 
-	return () => {
-		abortController.abort();
-		cancelAnimationFrame(animationFrame);
-		features.forEach((feature) => {
-			feature.style.removeProperty("--home-hero-feature-shift-x");
-			feature.style.removeProperty("--home-hero-feature-shift-y");
-		});
+	return {
+		playReaction,
+		setSceneVisible: (visible) => {
+			if (isSceneVisible === visible) return;
+			isSceneVisible = visible;
+			if (!visible) reset();
+		},
+		reset,
+		destroy: () => {
+			abortController.abort();
+			reset();
+			gsap.set(image, { clearProps: "transform" });
+		},
 	};
 }

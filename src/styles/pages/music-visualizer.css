@@ -125,6 +125,38 @@ html:has(.music-visualizer-page) .footer {
 	height: 100% !important;
 }
 
+.music-visualizer__scene-status {
+	position: fixed;
+	top: calc(var(--space-8) * 3);
+	left: 50%;
+	z-index: 50;
+	max-width: calc(100vw - var(--space-8));
+	padding: var(--space-2) var(--space-4);
+	border-radius: var(--radius-small);
+	background: var(--mv-rail);
+	color: var(--mv-accent);
+	text-align: center;
+	transform: translateX(-50%);
+}
+
+.music-visualizer__player-status {
+	display: flex;
+	align-items: center;
+	gap: var(--space-3);
+	color: inherit;
+	text-align: center;
+}
+
+.music-visualizer__player-status p,
+.music-visualizer__playlist-empty p {
+	margin: 0;
+}
+
+.music-visualizer button:disabled {
+	cursor: not-allowed;
+	opacity: 0.5;
+}
+
 .mv-controls {
 	position: fixed;
 	top: 0;
@@ -1035,6 +1067,7 @@ html:has(.music-visualizer-page) .footer {
 }
 
 .music-visualizer__volume-wrap:hover .music-visualizer__volume-pop,
+.music-visualizer__volume-wrap:focus-within .music-visualizer__volume-pop,
 .music-visualizer__volume-pop.is-visible {
 	opacity: 1;
 	transform: translate(-50%, 0);
@@ -1717,6 +1750,15 @@ html:has(.music-visualizer-page) .footer {
 	transform: scale(1.05);
 }
 
+.music-visualizer__playlist-back--retry {
+	width: auto;
+	height: auto;
+	min-height: calc(var(--space-8) + var(--space-3));
+	padding: var(--space-2) var(--space-3);
+	border-radius: var(--radius-small);
+	white-space: nowrap;
+}
+
 .music-visualizer__playlist-kicker {
 	font-size: 12px;
 	letter-spacing: 0.24em;
@@ -1748,7 +1790,9 @@ html:has(.music-visualizer-page) .footer {
 	flex-direction: column;
 	gap: 0;
 	height: calc(100% - 62px);
+	margin: 0;
 	padding: 6px 0 32px 0;
+	list-style: none;
 	overflow-y: auto;
 	pointer-events: auto;
 	scrollbar-width: none;
@@ -2240,6 +2284,9 @@ html:has(.music-visualizer-page) .footer {
 }
 
 @media (prefers-reduced-motion: reduce) {
+	.music-visualizer__playlist-list {
+		scroll-behavior: auto;
+	}
 	.music-visualizer__btn--playlist::before,
 	.music-visualizer__btn--playlist svg,
 	.music-visualizer__playlist-view,

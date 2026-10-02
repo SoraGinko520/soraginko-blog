@@ -237,18 +237,18 @@ export function initNavbarDropdownDelegation(): void {
 		if (trigger) {
 			const container = trigger.closest<HTMLElement>("[data-dropdown]");
 			const index = container ? getItemIndex(container) : null;
-			if (index === null) return;
+			if (!container || index === null) return;
 
 			if (event.key === "Enter" || event.key === " ") {
 				event.preventDefault();
 				if (pinnedIndex === index) {
 					closeNavbarDropdownPanel();
 				} else {
-					openNavbarDropdownPinned(trigger);
+					openNavbarDropdownPinned(container);
 				}
 			} else if (event.key === "ArrowDown") {
 				event.preventDefault();
-				openNavbarDropdownPinned(trigger);
+				openNavbarDropdownPinned(container);
 				focusFirstPageItem(index);
 			}
 			return;

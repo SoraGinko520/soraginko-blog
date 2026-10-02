@@ -22,21 +22,21 @@ import { i18n } from "@/i18n/translation";
 	aria-label={i18n(I18nKey.music)}
 >
 	<!-- 上展面板：dock 上方独立一层，顶部可切换歌单 / 歌词 -->
-	<div class="music-player__panel">
+	<div class="music-player__panel" id="music-player-panel" aria-hidden="true" inert>
 		<div class="music-player__panel-clip">
 			<div class="music-player__panel-body">
 				<div class="music-player__panel-tabs">
-					<button class="music-player__tab music-player__tab--playlist is-active" type="button">{i18n(I18nKey.musicPlaylist)}</button>
-					<button class="music-player__tab music-player__tab--lyrics" type="button">{i18n(I18nKey.musicLyrics)}</button>
+					<button class="music-player__tab music-player__tab--playlist is-active" aria-pressed="true" aria-controls="music-player-playlist" type="button">{i18n(I18nKey.musicPlaylist)}</button>
+					<button class="music-player__tab music-player__tab--lyrics" aria-pressed="false" aria-controls="music-player-lyrics" type="button">{i18n(I18nKey.musicLyrics)}</button>
 				</div>
 				<div class="music-player__panel-views">
-					<div class="music-player__playlist-view is-active">
-						<div class="music-player__playlist-list custom-scrollbar" role="listbox" aria-label={i18n(I18nKey.musicPlaylist)}></div>
+					<div class="music-player__playlist-view is-active" id="music-player-playlist">
+						<ul class="music-player__playlist-list custom-scrollbar" aria-label={i18n(I18nKey.musicPlaylist)}></ul>
 					</div>
-					<div class="music-player__lyrics-view">
-						<div class="music-player__lyrics-list custom-scrollbar" role="listbox" aria-label={i18n(I18nKey.musicLyrics)}>
-							<div class="music-player__lyrics-placeholder">{i18n(I18nKey.musicNoLyrics)}</div>
-						</div>
+					<div class="music-player__lyrics-view" id="music-player-lyrics" aria-hidden="true" inert>
+						<ul class="music-player__lyrics-list custom-scrollbar" aria-label={i18n(I18nKey.musicLyrics)}>
+							<li class="music-player__lyrics-placeholder">{i18n(I18nKey.musicNoLyrics)}</li>
+						</ul>
 					</div>
 				</div>
 			</div>
@@ -45,11 +45,12 @@ import { i18n } from "@/i18n/translation";
 
 	<div class="music-player__stage">
 		<!-- 信息层：bar 态默认展开的独立表面 -->
-		<div class="music-player__info">
+		<div class="music-player__info" id="music-player-info" aria-hidden="true" inert>
 			<div class="music-player__info-clip">
 				<div class="music-player__info-surface">
 					<p class="music-player__title">{i18n(I18nKey.musicNoPlaying)}</p>
 					<p class="music-player__artist"></p>
+					<p class="music-player__error" role="status" hidden></p>
 					<div class="music-player__progress-row">
 						<span class="music-player__time-current">0:00</span>
 						<div
@@ -59,6 +60,7 @@ import { i18n } from "@/i18n/translation";
 							aria-valuemin="0"
 							aria-valuemax="100"
 							aria-valuenow="0"
+							tabindex="0"
 						>
 							<div class="music-player__progress-bar"></div>
 							<div class="music-player__progress-thumb"></div>
@@ -73,7 +75,7 @@ import { i18n } from "@/i18n/translation";
 		<div class="music-player__bar">
 			<div class="music-player__slot">
 				<span class="music-player__pill-text"><span class="music-player__pill-label"></span></span>
-				<div class="music-player__toolbar">
+				<div class="music-player__toolbar" id="music-player-toolbar" aria-hidden="true" inert>
 					<button class="music-player__btn music-player__btn--mode" data-tooltip={i18n(I18nKey.playModeList)} aria-label={i18n(I18nKey.playModeList)} type="button">
 						<Icon name="material-symbols:repeat-rounded" class="music-player__icon-mode-list text-xl" aria-hidden="true" />
 						<Icon name="material-symbols:repeat-one-rounded" class="music-player__icon-mode-one text-xl hidden" aria-hidden="true" />
@@ -93,7 +95,7 @@ import { i18n } from "@/i18n/translation";
 					<button class="music-player__btn music-player__btn--next" data-tooltip={i18n(I18nKey.musicNext)} aria-label={i18n(I18nKey.musicNext)} type="button">
 						<Icon name="material-symbols:skip-next-rounded" class="text-2xl" aria-hidden="true" />
 					</button>
-					<button class="music-player__btn music-player__btn--playlist" data-tooltip={i18n(I18nKey.musicPlaylist)} aria-label={i18n(I18nKey.musicPlaylist)} type="button">
+					<button class="music-player__btn music-player__btn--playlist" data-tooltip={i18n(I18nKey.musicPlaylist)} aria-label={i18n(I18nKey.musicPlaylist)} aria-expanded="false" aria-controls="music-player-panel" type="button">
 						<Icon name="mdi:playlist-music" class="text-xl" aria-hidden="true" />
 					</button>
 					<div class="music-player__volume">
@@ -111,6 +113,7 @@ import { i18n } from "@/i18n/translation";
 								aria-valuemin="0"
 								aria-valuemax="100"
 								aria-valuenow="70"
+								tabindex="0"
 							>
 								<div class="music-player__volume-bar"></div>
 								<div class="music-player__volume-thumb"></div>
@@ -122,7 +125,7 @@ import { i18n } from "@/i18n/translation";
 		</div>
 
 		<!-- 唱片：三态复用的圆碟，位置随形态过渡 -->
-		<button class="music-player__disc" type="button" aria-label={i18n(I18nKey.music)}>
+		<button class="music-player__disc" type="button" aria-label={i18n(I18nKey.music)} aria-expanded="false" aria-controls="music-player-info music-player-toolbar">
 			<Icon name="material-symbols:music-note-rounded" class="music-player__disc-placeholder text-2xl" aria-hidden="true" />
 			<img class="music-player__disc-img is-empty" src="" alt="" />
 		</button>
@@ -134,18 +137,20 @@ import { i18n } from "@/i18n/translation";
 </div>
 
 <template id="music-player-item-template">
-	<div class="music-player__track" role="option">
-		<div class="music-player__track-cover-wrap">
+	<li>
+	<button class="music-player__track" type="button">
+		<span class="music-player__track-cover-wrap">
 			<img src="" class="music-player__track-cover" loading="lazy" alt="" />
-			<div class="music-player__track-active hidden">
+			<span class="music-player__track-active hidden" aria-hidden="true">
 				<Icon name="material-symbols:graphic-eq-rounded" class="text-sm" aria-hidden="true" />
-			</div>
-		</div>
-		<div class="music-player__track-meta">
-			<div class="music-player__track-title"></div>
-			<div class="music-player__track-artist"></div>
-		</div>
-	</div>
+			</span>
+		</span>
+		<span class="music-player__track-meta">
+			<span class="music-player__track-title"></span>
+			<span class="music-player__track-artist"></span>
+		</span>
+	</button>
+	</li>
 </template>
 
 <script>

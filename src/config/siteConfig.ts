@@ -7,7 +7,7 @@ const SITE_LANG = "zh_CN";
 
 export const siteConfig: SiteConfig = {
 	// 站点标题
-	title: "SoraGinko",
+	title: "日记与杂谈--爱银子的小伙",
 
 	// 站点副标题
 	subtitle: "SoraGinko 的个人博客",
@@ -24,11 +24,11 @@ export const siteConfig: SiteConfig = {
 	// 主题色
 	themeColor: {
 		// 主题色的默认色相，范围从 0 到 360。例如：红色：0，青色：200，蓝绿色：250，粉色：345
-		hue: 165,
+		hue: 220,
 		// 是否对访问者隐藏主题色选择器
 		fixed: false,
 		// 默认模式："light" 亮色，"dark" 暗色
-		defaultMode: "dark",
+		defaultMode: "light",
 	},
 
 	// 页面整体宽度（单位：rem）
@@ -39,52 +39,16 @@ export const siteConfig: SiteConfig = {
 	// Favicon 配置
 	favicon: [
 		{
-			src: "/favicon/favicon.ico",
+			src: "/favicon/silver-brand-favicon.baaad159baf3.png",
 			sizes: "32x32",
 		},
 		{
-			src: "/favicon/favicon-16x16.png",
-			sizes: "16x16",
-		},
-		{
-			src: "/favicon/favicon-32x32.png",
-			sizes: "32x32",
-		},
-		{
-			src: "/favicon/favicon-48x48.png",
-			sizes: "48x48",
-		},
-		{
-			src: "/favicon/favicon.svg",
-			sizes: "any",
-		},
-		{
-			src: "/favicon/apple-touch-icon.png",
+			src: "/favicon/silver-brand-apple-touch-icon.e45c9b638eec.png",
 			sizes: "180x180",
 		},
 		{
-			src: "/favicon/apple-touch-icon-152x152.png",
-			sizes: "152x152",
-		},
-		{
-			src: "/favicon/apple-touch-icon-167x167.png",
-			sizes: "167x167",
-		},
-		{
-			src: "/favicon/apple-touch-icon-180x180.png",
-			sizes: "180x180",
-		},
-		{
-			src: "/favicon/android-chrome-192x192.png",
-			sizes: "192x192",
-		},
-		{
-			src: "/favicon/android-chrome-512x512.png",
+			src: "/favicon/silver-brand-android-chrome.2ef87374b941.png",
 			sizes: "512x512",
-		},
-		{
-			src: "/favicon/safari-pinned-tab.svg",
-			sizes: "any",
 		},
 	],
 
@@ -98,8 +62,8 @@ export const siteConfig: SiteConfig = {
 		// 4. 网络图片: { type: "url", value: "https://example.com/logo.png", alt: "Logo" }
 		logo: {
 			type: "image",
-			value: "assets/images/logo.png",
-			alt: "logo",
+			value: "/assets/images/home/silver-dialogue-sticker.2bbc32bb7a62.webp",
+			alt: "SoraGinko",
 		},
 		// 导航栏标题
 		title: "SoraGinko",
@@ -108,7 +72,7 @@ export const siteConfig: SiteConfig = {
 	},
 
 	// 站点开始日期，用于统计运行天数
-	siteStartDate: "", // 首次正式上线后填写 YYYY-MM-DD
+	siteStartDate: "2026-10-02T22:06:18+08:00", // 首次开始提交测试版的真实时刻，与该提交的 Git 日期一致
 
 	// 站点时区（IANA 时区字符串），用于格式化bangumi、rss里的构建日期时间等等..
 	// 示例："Asia/Shanghai", "UTC", 如果为空，则按照构建服务器的时区进行时区转换
@@ -150,7 +114,10 @@ export const siteConfig: SiteConfig = {
 	// 页面开关配置 - 控制特定页面的访问权限，设为false会返回404
 	pages: {
 		// 友链页面开关
-		friends: false,
+		friends: true,
+		// 友链朋友圈与 GitHub 项目页面开关
+		fcircle: true,
+		projects: true,
 		// 打赏页面开关
 		sponsor: false,
 		// 留言板页面开关，需要配置评论系统
@@ -160,7 +127,7 @@ export const siteConfig: SiteConfig = {
 		// 收藏API页面开关
 		collections: true,
 		// 音乐可视化页面开关
-		music: false,
+		music: true,
 		// 文档页面开关（/list/ 文章列表，导航栏「文章」下拉里显示为「文档」）
 		postList: true,
 		// 归档页面开关
@@ -187,17 +154,18 @@ export const siteConfig: SiteConfig = {
 		microsoftClarityId: "",
 		// Umami 统计配置
 		umamiAnalytics: {
-			websiteId: "",
-			shareId: "",
-			scriptUrl: "",
-			// 使用 Umami 的 PV 展示文章详情、列表与网格浏览量；启用时优先于评论系统统计
+			// 仅使用 SoraGinko 自己的公开统计配置，缺失时保持明确空态。
+			websiteId: import.meta.env?.PUBLIC_UMAMI_WEBSITE_ID?.trim() ?? "",
+			shareId: import.meta.env?.PUBLIC_UMAMI_SHARE_ID?.trim() ?? "",
+			scriptUrl: import.meta.env?.PUBLIC_UMAMI_SCRIPT_URL?.trim() ?? "",
+			// Cloud 免费模式只 Tracking + Share URL，不通过非公开 API 获取文章 PV。
 			pageviews: {
 				enabled: false,
 			},
 			// 是否追踪出站链接
-			trackOutboundLinks: false,
+			trackOutboundLinks: true,
 			// 是否收集浏览器性能指标
-			collectWebVitals: false,
+			collectWebVitals: true,
 			// 会话回放配置
 			relpays: {
 				// 是否启用会话回放

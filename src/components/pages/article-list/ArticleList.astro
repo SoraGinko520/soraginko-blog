@@ -92,11 +92,6 @@ const totalPostLabel = i18n(
 		parseArticleCoverApiUrls,
 		type ArticleCoverLifecycle,
 	} from "@/utils/article-cover-lifecycle";
-	import {
-		createEmptyUmamiPageviewLookup,
-		getUmamiPageviewLookup,
-		normalizeUmamiPageviewPath,
-	} from "@/utils/umami-pageviews";
 	import { definePageIsland } from "@/utils/swup-lifecycle";
 
 	let cleanupActiveArticleList: (() => void) | undefined;
@@ -121,23 +116,10 @@ const totalPostLabel = i18n(
 		);
 		const controller = new AbortController();
 		const { signal } = controller;
-		let disposed = false;
-		let pageviewLookup: Map<string, number> | null = null;
 		const coverLifecycles = new Map<HTMLElement, ArticleCoverLifecycle>();
 
 		function renderPageviews() {
-			articleList
-				.querySelectorAll<HTMLElement>("[data-article-list-pageview]")
-				.forEach((node) => {
-					if (pageviewLookup === null) {
-						node.textContent = "-";
-						return;
-					}
-					const path = normalizeUmamiPageviewPath(
-						node.dataset.articleListPageviewPath || "",
-					);
-					node.textContent = (pageviewLookup.get(path) || 0).toLocaleString();
-				});
+			articleList.querySelectorAll<HTMLElement>("[data-article-list-pageview]").forEach((node) => { node.textContent = "--"; });
 		}
 
 		function initCoverLoading() {
@@ -275,29 +257,7 @@ const totalPostLabel = i18n(
 		initCoverLoading();
 		renderPageviews();
 
-		const canLoadPageviews =
-			articleList.dataset.articleListUmamiEnabled === "true" &&
-			!!articleList.dataset.articleListUmamiApiBase &&
-			!!articleList.dataset.articleListUmamiShareId;
-		if (canLoadPageviews) {
-			void getUmamiPageviewLookup({
-				apiBase: articleList.dataset.articleListUmamiApiBase || "",
-				shareId: articleList.dataset.articleListUmamiShareId || "",
-			})
-				.then((lookup) => {
-					if (disposed) return;
-					pageviewLookup = lookup;
-					renderPageviews();
-				})
-				.catch(() => {
-					if (disposed) return;
-					pageviewLookup = createEmptyUmamiPageviewLookup();
-					renderPageviews();
-				});
-		}
-
 		cleanupActiveArticleList = () => {
-			disposed = true;
 			cleanupPinnedCarousel();
 			controller.abort();
 		};

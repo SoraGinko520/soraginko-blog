@@ -11,12 +11,13 @@ interface Props {
 	icon: string;
 	eyebrow: string;
 	hoverTitle: string;
-	hoverCode: string;
 	variant?: "square" | "wide";
 	pills: Pill[];
 	class?: string;
 	statKind?: "visits" | "articles";
 	visualImage?: string;
+	publicStatsUrl?: string;
+	publicStatsLabel?: string;
 }
 
 const {
@@ -24,12 +25,13 @@ const {
 	detail,
 	eyebrow,
 	hoverTitle,
-	hoverCode,
 	variant = "square",
 	pills,
 	class: className = "",
 	statKind,
 	visualImage,
+	publicStatsUrl,
+	publicStatsLabel,
 } = Astro.props;
 ---
 
@@ -40,10 +42,9 @@ const {
 		`data-card--${variant}`,
 		className,
 	]}
-	data-card-interactive
 	data-stat-kind={statKind}
 >
-	<div class="data-card__frame"></div>
+	<div class="data-card__frame" aria-hidden="true"></div>
 	<div class:list={["data-card__visual", visualImage && "data-card__visual--image"]} aria-hidden="true">
 		{visualImage ? (
 			<img src={visualImage} alt="" class="data-card__visual-img" data-home-motion-image loading="lazy" decoding="async" />
@@ -58,30 +59,29 @@ const {
 	<div class="data-card__content">
 		<p class="data-card__eyebrow">{eyebrow}</p>
 		<h3 class="data-card__title">{title}</h3>
-		<p class="data-card__detail">{detail}</p>
+		<p class="data-card__detail" role={statKind === "visits" ? "status" : undefined}>{detail}</p>
+		{publicStatsUrl && <a class="data-card__public-stats" href={publicStatsUrl} target="_blank" rel="noopener noreferrer">{publicStatsLabel} ↗</a>}
 	</div>
-	<div class="data-card__hover" aria-hidden="true">
-		<div class="data-card__hover-orb"></div>
-		<div class="data-card__hover-header">
-			<span class="data-card__hover-code">{hoverCode}</span>
-			<span class="data-card__hover-system">SYSTEM</span>
-		</div>
-		<h3 class="data-card__hover-title">{hoverTitle}<span>.</span></h3>
-	</div>
-	<div class="data-card__hover-pills" aria-hidden="true">
-		{pills.map((pill, index) => (
+	<details class="data-card__stats">
+		<summary class="data-card__stats-toggle">{hoverTitle}</summary>
+		<div class="data-card__hover-pills">
+		{pills.map((pill) => (
 			<span
 				class:list={[
 					"data-card__hover-pill",
 					`data-card__hover-pill--${pill.tone || "light"}`,
 				]}
-				style={`--pill-index:${index};`}
+				data-stat-pill
 			>
 				<span>{pill.label}</span>
-				<strong data-stat-value={statKind === "visits" ? pill.label : undefined}>
+				<strong
+					data-stat-value={statKind === "visits" ? pill.label : undefined}
+					data-stat-source={statKind === "visits" && pill.label !== "UV" && pill.label !== "PV" ? "" : undefined}
+				>
 					{pill.value}
 				</strong>
 			</span>
 		))}
-	</div>
+		</div>
+	</details>
 </article>

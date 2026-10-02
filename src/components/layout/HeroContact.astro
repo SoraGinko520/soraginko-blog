@@ -6,19 +6,24 @@ interface Props {
 }
 
 const { contact } = Astro.props;
-const label = `${contact.platform}：${contact.handle}`;
+const label = `${contact.platform} ${contact.handle} OFF WORK`;
 ---
 
 <aside class="home-hero__contact" data-hero-contact aria-label={label}>
+	<span class="home-hero__contact-pill" aria-hidden="true">BLOG</span>
 	{contact.href ? (
 		<a href={contact.href} class="home-hero__contact-link">
-			<span class="home-hero__contact-platform">{contact.platform}：</span>
+			<span class="home-hero__contact-platform">{contact.platform}</span>
 			<span class="home-hero__contact-handle">{contact.handle}</span>
+			<span class="home-hero__contact-diamond" aria-hidden="true">✦</span>
+			<span class="home-hero__contact-status">OFF WORK</span>
 		</a>
 	) : (
 		<p class="home-hero__contact-link">
-			<span class="home-hero__contact-platform">{contact.platform}：</span>
+			<span class="home-hero__contact-platform">{contact.platform}</span>
 			<span class="home-hero__contact-handle">{contact.handle}</span>
+			<span class="home-hero__contact-diamond" aria-hidden="true">✦</span>
+			<span class="home-hero__contact-status">OFF WORK</span>
 		</p>
 	)}
 </aside>

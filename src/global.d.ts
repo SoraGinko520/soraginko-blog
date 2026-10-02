@@ -79,6 +79,7 @@ declare global {
 				lyricsStatus?: "loading" | "loaded" | "none" | "failed";
 				currentLrcIndex: number;
 				initialized: boolean;
+				initializing: boolean;
 				error: string | null;
 				config: {
 					i18n?: {

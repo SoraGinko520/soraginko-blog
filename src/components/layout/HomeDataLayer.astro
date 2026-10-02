@@ -18,6 +18,7 @@ import {
 } from "@/utils/home-data-layer.js";
 import { getGuidePostSets } from "@/utils/home-guide-grid.js";
 import { processCoverImageSync } from "@/utils/image-utils";
+import { getUmamiShareUrl } from "@/utils/umami-pageviews";
 import {
 	getFileDirFromPath,
 	getPostUrlBySlug,
@@ -87,56 +88,35 @@ const articlePills = [
 		tone: "light" as const,
 	},
 ];
+const umamiConfig = siteConfig.analytics?.umamiAnalytics;
+const statsShareUrl = getUmamiShareUrl(umamiConfig?.shareId);
 const visitPills = [
 	{ label: "UV", value: "--", tone: "light" as const },
 	{ label: "PV", value: "--", tone: "dark" as const },
 	{
 		label: i18n(I18nKey.siteStatsSource),
-		value: "未启用",
+		value: "不蒜子",
 		tone: "outline" as const,
 	},
 ];
-const contactItems = homeConfig.links.map((link) => ({
-	name: link.name,
-	icon: link.icon,
-	href: link.url,
-}));
-const contactRegionClasses = [
-	"top-left",
-	"top-right",
-	"bottom-left",
-	"bottom-right",
-	"center",
-];
-const contactRegions = contactItems.map((link, index) => ({
-	...link,
-	region: contactRegionClasses[index] ?? "unassigned",
-}));
-const umamiConfig = siteConfig.analytics?.umamiAnalytics;
-const statsBaseUrl = umamiConfig?.scriptUrl
-	? new URL(umamiConfig.scriptUrl).origin
-	: "";
-const statsShareId = umamiConfig?.shareId ?? "";
 ---
 
 <section
 	class="home-data-layer"
 	aria-labelledby="home-data-layer-title"
 	id="home-data-layer"
-	data-stats-base-url={statsBaseUrl}
-	data-stats-share-id={statsShareId}
-	data-guide-opening="pending"
+	data-guide-opening="complete"
 >
 	<div class="home-data-layer__inner">
 		<div class="home-data-layer__heading">
-			<p class="home-data-layer__kicker">CONTEXT</p>
-				<h2 class="home-data-layer__title-main" id="home-data-layer-title">{i18n(I18nKey.siteData)}</h2>
-				<h2 class="home-data-layer__title-matrix">{i18n(I18nKey.mapGuide)}</h2>
+			<p class="home-data-layer__kicker"><span class="home-data-layer__kicker-word">CONTEXT</span></p>
+			<p class="home-data-layer__title-main">{i18n(I18nKey.siteData)}</p>
+			<h2 class="home-data-layer__title-matrix" id="home-data-layer-title">{i18n(I18nKey.mapGuide)}</h2>
 		</div>
 
 		<div class="home-data-layer__top-grid">
-			<DataMetricCard title={i18n(I18nKey.siteVisits)} eyebrow="VISITS" detail={i18n(I18nKey.visitsLoading)} icon="material-symbols:visibility-outline-rounded" hoverTitle={i18n(I18nKey.visitTrajectory)} hoverCode="01" variant="square" pills={visitPills} statKind="visits" visualImage={homeConfig.dataLayer.visitImage} />
-			<DataMetricCard title={i18n(I18nKey.articleArchive)} eyebrow="ARCHIVE" detail={`${posts.length}${i18n(I18nKey.postsCount)} · ${formatCompactNumber(totalWords)}${i18n(I18nKey.wordCount)}`} icon="material-symbols:article-outline" hoverTitle={i18n(I18nKey.contentIndex)} hoverCode="02" variant="wide" pills={articlePills} statKind="articles" visualImage={homeConfig.dataLayer.archiveImage} />
+			<DataMetricCard title={i18n(I18nKey.siteVisits)} eyebrow="VISITS" detail={`${i18n(I18nKey.visitsLoading)} · ${i18n(I18nKey.siteStatsSource)}: 不蒜子`} publicStatsUrl={statsShareUrl} publicStatsLabel={i18n(I18nKey.viewUmamiStats)} icon="material-symbols:visibility-outline-rounded" hoverTitle={i18n(I18nKey.visitTrajectory)} variant="square" pills={visitPills} statKind="visits" visualImage={homeConfig.dataLayer.visitImage} />
+			<DataMetricCard title={i18n(I18nKey.articleArchive)} eyebrow="ARCHIVE" detail={`${posts.length}${i18n(I18nKey.postsCount)} · ${formatCompactNumber(totalWords)}${i18n(I18nKey.wordCount)}`} icon="material-symbols:article-outline" hoverTitle={i18n(I18nKey.contentIndex)} variant="wide" pills={articlePills} statKind="articles" visualImage={homeConfig.dataLayer.archiveImage} />
 		</div>
 
 		<div class="home-guide-grid">
@@ -218,50 +198,17 @@ const statsShareId = umamiConfig?.shareId ?? "";
 					<a class="guide-tag-list__all" href={url("/archive/")}>{`${i18n(I18nKey.browseAllTags)} `}<Icon name="material-symbols:arrow-outward-rounded" is:inline /></a>
 				</div>
 			</section>
-
-			<section class="guide-card guide-card--contact" aria-labelledby="guide-contact-title" data-guide-contact tabindex="0">
-				<div class="guide-card__visual" aria-hidden="true">
-					<img src={homeConfig.dataLayer.contactImage} alt="" loading="lazy" decoding="async" />
-				</div>
-				<p class="guide-card__eyebrow">SUBSCRIBE</p>
-				<h3 id="guide-contact-title">{i18n(I18nKey.subscribeContact)}</h3>
-				<div class="guide-contact__static-icons" aria-hidden="true">
-					<Icon name="fa7-brands:github" is:inline />
-					<Icon name="fa7-brands:qq" is:inline />
-					<Icon name="fa7-brands:bilibili" is:inline />
-				</div>
-				<template data-guide-contact-template>
-					<div class="guide-contact__overlay" role="group" aria-label={i18n(I18nKey.contactMethods)}>
-						<svg class="guide-contact__overlay-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
-							<line class="guide-contact__overlay-line" x1="50" y1="0" x2="50" y2="26" vector-effect="non-scaling-stroke" />
-							<line class="guide-contact__overlay-line" x1="50" y1="100" x2="50" y2="74" vector-effect="non-scaling-stroke" />
-							<line class="guide-contact__overlay-line" x1="0" y1="50" x2="32" y2="50" vector-effect="non-scaling-stroke" />
-							<line class="guide-contact__overlay-line" x1="100" y1="50" x2="68" y2="50" vector-effect="non-scaling-stroke" />
-						</svg>
-						{contactRegions.map((link) => (
-							<a class={`guide-contact__region guide-contact__region--${link.region}`} href={link.href} aria-label={link.name} title={link.name}>
-								<Icon name={link.icon} is:inline />
-							</a>
-						))}
-					</div>
-				</template>
-			</section>
 		</div>
 	</div>
 </section>
 
 <script>
 	import { gsap } from "gsap";
-	import I18nKey from "@/i18n/i18nKey";
-	import { i18n } from "@/i18n/translation";
-	import { createCache } from "@/utils/cache-utils";
-	import { formatCompactNumber } from "@/utils/home-data-layer.js";
 	import { bindHomeLayer } from "@/utils/home-lifecycle";
 	import { navigateToPage } from "@/utils/navigation-utils";
 	import { waitForPageLoaderHidden } from "@/utils/page-loader-controller.js";
 
 	type Cleanup = () => void;
-	type ShareData = { websiteId: string; token: string };
 	type GuideOpeningTargets = {
 		visitCard: HTMLElement;
 		archiveCard: HTMLElement;
@@ -269,15 +216,14 @@ const statsShareId = umamiConfig?.shareId ?? "";
 		latestCard: HTMLElement;
 		dealCards: HTMLElement[];
 	};
-	type GuideDealPose = {
-		element: HTMLElement;
-		x: number;
-		y: number;
-		rotation: number;
-		zIndex: number;
+	const GUIDE_OPENING = {
+		enterOffset: 8,
+		headingDuration: 0.65,
+		headingStagger: 0.08,
+		cardDuration: 0.55,
+		cardStagger: 0.07,
+		cardStart: 0.18,
 	};
-
-	const shareCache = createCache<ShareData>({ key: "umami_share_data", ttl: 3_600_000 });
 	let cleanups: Cleanup[] = [];
 	let guideOpeningToken = 0;
 
@@ -303,18 +249,16 @@ const statsShareId = umamiConfig?.shareId ?? "";
 		);
 		const pinnedCard = layer.querySelector<HTMLElement>(".guide-card--pinned");
 		const latestCard = layer.querySelector<HTMLElement>(".guide-card--latest");
-		const dealCards = [
-			layer.querySelector<HTMLElement>(".guide-card--categories"),
-			layer.querySelector<HTMLElement>(".guide-card--tags"),
-			layer.querySelector<HTMLElement>(".guide-card--contact"),
-		];
+		const categoriesCard = layer.querySelector<HTMLElement>(".guide-card--categories");
+		const tagsCard = layer.querySelector<HTMLElement>(".guide-card--tags");
 
 		if (
 			!visitCard ||
 			!archiveCard ||
 			!pinnedCard ||
 			!latestCard ||
-			dealCards.some((card) => !card)
+			!categoriesCard ||
+			!tagsCard
 		) {
 			return null;
 		}
@@ -324,62 +268,8 @@ const statsShareId = umamiConfig?.shareId ?? "";
 			archiveCard,
 			pinnedCard,
 			latestCard,
-			dealCards: dealCards as HTMLElement[],
+			dealCards: [categoriesCard, tagsCard],
 		};
-	}
-
-	function getDropOffset(layerRect: DOMRect, cardRect: DOMRect) {
-		return -(cardRect.top - layerRect.top + cardRect.height * 1.15);
-	}
-
-	function getLeftEntryOffset(layerRect: DOMRect, cardRect: DOMRect) {
-		return -(cardRect.right - layerRect.left + cardRect.width * 0.15);
-	}
-
-	function getLatestPeekOffset(layerRect: DOMRect, cardRect: DOMRect) {
-		return layerRect.right - cardRect.left - cardRect.width * 0.2;
-	}
-
-	function getGuideDealPoses(
-		layerRect: DOMRect,
-		cards: HTMLElement[],
-	): GuideDealPose[] {
-		const deckCenterX = (layerRect.left + layerRect.right) / 2;
-		const handPoses = [
-			{ x: -0.16, y: 6, rotation: -13, zIndex: 1 },
-			{ x: 0, y: -12, rotation: 0, zIndex: 3 },
-			{ x: 0.16, y: 6, rotation: 13, zIndex: 2 },
-		];
-		// 斜放时两侧下角会越过普通卡片的边界，预留空间避免被整层裁切。
-		const fanBottomInset = cards.reduce((inset, element, index) => {
-			const rect = element.getBoundingClientRect();
-			const pose = handPoses[index] ?? handPoses[1];
-			const rotationOverflow =
-				Math.abs(Math.sin((pose.rotation * Math.PI) / 180)) *
-				rect.width *
-				0.5;
-			return Math.max(
-				inset,
-				rotationOverflow + rect.height * 0.14 + 18,
-			);
-		}, 24);
-
-		return cards.map((element, index) => {
-			const rect = element.getBoundingClientRect();
-			const pose = handPoses[index] ?? handPoses[1];
-			const cardCenterX = (rect.left + rect.right) / 2;
-			const cardCenterY = (rect.top + rect.bottom) / 2;
-			const deckCenterY =
-				layerRect.bottom - rect.height * 0.5 - fanBottomInset + pose.y;
-
-			return {
-				element,
-				x: deckCenterX + rect.width * pose.x - cardCenterX,
-				y: deckCenterY - cardCenterY,
-				rotation: pose.rotation,
-				zIndex: pose.zIndex,
-			};
-		});
 	}
 
 	async function initGuideOpening(layer: HTMLElement, token: number) {
@@ -388,11 +278,13 @@ const statsShareId = umamiConfig?.shareId ?? "";
 			return;
 		}
 
+		// 默认 SSR 可读；只有客户端已经接管动效，才暂时隐藏等待入场。
+		layer.dataset.guideOpening = "pending";
 		await waitForPageLoaderHidden();
 		if (token !== guideOpeningToken || !document.contains(layer)) return;
 
 		const title = layer.querySelector<HTMLElement>(".home-data-layer__title-matrix");
-		const kicker = layer.querySelector<HTMLElement>(".home-data-layer__kicker");
+		const kicker = layer.querySelector<HTMLElement>(".home-data-layer__kicker-word");
 		const titleMain = layer.querySelector<HTMLElement>(".home-data-layer__title-main");
 		const targets = getGuideOpeningTargets(layer);
 		if (!title || !kicker || !titleMain || !targets) {
@@ -412,7 +304,7 @@ const statsShareId = umamiConfig?.shareId ?? "";
 		const release = () => {
 			layer.dataset.guideOpening = "complete";
 			gsap.set(headings, {
-				clearProps: "opacity,visibility,transform,filter",
+				clearProps: "opacity,visibility,transform,filter,transformOrigin",
 			});
 			gsap.set(cards, {
 				clearProps:
@@ -424,253 +316,82 @@ const statsShareId = umamiConfig?.shareId ?? "";
 		const finish = () => {
 			if (released) return;
 			released = true;
+			preloadObserver.disconnect();
 			release();
 		};
 		let timeline: ReturnType<typeof gsap.timeline> | null = null;
 		let started = false;
+		let isInView = false;
+		const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 		const start = () => {
 			if (started) return;
-			started = true;
-			layer.dataset.guideOpening = "playing";
-			const layerRect = layer.getBoundingClientRect();
-			const visitRect = targets.visitCard.getBoundingClientRect();
-			const archiveRect = targets.archiveCard.getBoundingClientRect();
-			const pinnedRect = targets.pinnedCard.getBoundingClientRect();
-			const latestRect = targets.latestCard.getBoundingClientRect();
-			const dealPoses = getGuideDealPoses(layerRect, targets.dealCards);
-			const visitLandingAt = 0.42;
-			const dealStartAt = 1;
-			const latestEntryAt = dealStartAt + 0.5;
-			if (dealPoses.length !== targets.dealCards.length) {
+			if (reducedMotionQuery.matches) {
 				finish();
 				return;
 			}
-
-			gsap.set(headings, { autoAlpha: 0, filter: "blur(12px)" });
-			gsap.set(cards, { autoAlpha: 1, pointerEvents: "none" });
-			gsap.set(
-				[
-					targets.visitCard,
-					targets.archiveCard,
-					targets.pinnedCard,
-					...targets.dealCards,
-				],
-				{ autoAlpha: 0 },
-			);
-			gsap.set(targets.visitCard, {
-				y: getDropOffset(layerRect, visitRect),
-				scaleX: 1,
-				scaleY: 1,
-				transformOrigin: "50% 100%",
-			});
-			gsap.set(targets.archiveCard, {
-				y: getDropOffset(layerRect, archiveRect),
-				scaleX: 1,
-				scaleY: 1,
-				transformOrigin: "50% 100%",
-			});
-			gsap.set(targets.pinnedCard, {
-				x: getLeftEntryOffset(layerRect, pinnedRect),
-				transformOrigin: "50% 50%",
-			});
-			gsap.set(targets.latestCard, {
-				x: getLatestPeekOffset(layerRect, latestRect),
-				transformOrigin: "50% 100%",
-			});
-			dealPoses.forEach(({ element, x, y, rotation, zIndex }) => {
-				gsap.set(element, {
-					x,
-					y,
-					scale: 0.92,
-					rotation,
-					zIndex,
-					transformOrigin: "50% 108%",
-				});
-			});
+			started = true;
+			layer.dataset.guideOpening = "playing";
+			// 单次轻位移，不再计算大幅下落与翻牌姿态，避免入场触发布局测量。
+			gsap.set(headings, { autoAlpha: 0, y: GUIDE_OPENING.enterOffset });
+			gsap.set(cards, { autoAlpha: 0, y: GUIDE_OPENING.enterOffset, pointerEvents: "none" });
 
 			timeline = gsap.timeline({
+				defaults: { ease: "power2.out" },
 				onComplete: finish,
 			});
 			timeline
 				.to(headings, {
 					autoAlpha: 1,
-					filter: "blur(0px)",
-					duration: 0.32,
-					stagger: 0.06,
-					ease: "power2.out",
+					y: 0,
+					duration: GUIDE_OPENING.headingDuration,
+					stagger: GUIDE_OPENING.headingStagger,
 				}, 0)
-				.to(targets.visitCard, {
+				.to(cards, {
 					autoAlpha: 1,
 					y: 0,
-					scaleX: 1.012,
-					scaleY: 0.976,
-					duration: 0.32,
-					ease: "power2.in",
-				}, 0.1)
-				.to(targets.visitCard, {
-					y: -20,
-					scaleX: 1,
-					scaleY: 1,
-					duration: 0.07,
-					ease: "power2.out",
-				}, visitLandingAt)
-				.to(targets.visitCard, {
-					y: 0,
-					scaleX: 1.007,
-					scaleY: 0.99,
-					duration: 0.08,
-					ease: "power1.in",
-				}, 0.49)
-				.to(targets.visitCard, {
-					y: -9,
-					scaleX: 1,
-					scaleY: 1,
-					duration: 0.06,
-					ease: "power2.out",
-				}, 0.57)
-				.to(targets.visitCard, {
-					y: 0,
-					scale: 1,
-					duration: 0.07,
-					ease: "power1.in",
-				}, 0.63)
-				.to(targets.archiveCard, {
-					autoAlpha: 1,
-					y: 0,
-					scaleX: 1.009,
-					scaleY: 0.982,
-					duration: 0.36,
-					ease: "power2.in",
-				}, visitLandingAt)
-				.to(targets.archiveCard, {
-					y: -14,
-					scaleX: 1,
-					scaleY: 1,
-					duration: 0.1,
-					ease: "power2.out",
-				}, 0.78)
-				.to(targets.archiveCard, {
-					y: 0,
-					scale: 1,
-					duration: 0.1,
-					ease: "power1.in",
-				}, 0.88)
-				.to(targets.pinnedCard, {
-					autoAlpha: 1,
-					x: 0,
-					duration: 0.64,
-					ease: "power4.out",
-				}, 0.32)
-				.to(targets.dealCards, {
-					autoAlpha: 1,
-					duration: 0.12,
-					ease: "power2.out",
-				}, dealStartAt)
-				.to(targets.dealCards, {
-					x: 0,
-					y: 0,
-					scale: 1,
-					rotation: 0,
-					duration: 0.28,
-					stagger: 0.04,
-					ease: "power3.out",
-				}, dealStartAt + 0.14)
-				.to(targets.latestCard, {
-					x: getLatestPeekOffset(layerRect, latestRect) * 0.74,
-					rotation: -3.2,
-					transformOrigin: "0% 100%",
-					duration: 0.12,
-					ease: "power1.inOut",
-				}, latestEntryAt)
-				.to(targets.latestCard, {
-					x: getLatestPeekOffset(layerRect, latestRect) * 0.48,
-					rotation: 3,
-					transformOrigin: "100% 100%",
-					duration: 0.12,
-					ease: "power1.inOut",
-				}, latestEntryAt + 0.12)
-				.to(targets.latestCard, {
-					x: getLatestPeekOffset(layerRect, latestRect) * 0.22,
-					rotation: -1.6,
-					transformOrigin: "0% 100%",
-					duration: 0.12,
-					ease: "power1.inOut",
-				}, latestEntryAt + 0.24)
-				.to(targets.latestCard, {
-					x: 0,
-					rotation: 0,
-					transformOrigin: "50% 50%",
-					duration: 0.14,
-					ease: "power2.out",
-				}, latestEntryAt + 0.36);
+					duration: GUIDE_OPENING.cardDuration,
+					stagger: GUIDE_OPENING.cardStagger,
+				}, GUIDE_OPENING.cardStart);
 		};
 		const preloadObserver = new IntersectionObserver((entries) => {
-			if (!entries.some((entry) => entry.isIntersecting)) return;
-			preloadObserver.disconnect();
+			isInView = entries.some((entry) => entry.isIntersecting);
+			if (!isInView || document.hidden) {
+				timeline?.pause();
+				return;
+			}
 			start();
+			if (!released) timeline?.resume();
 		}, { rootMargin: "0px 0px -30% 0px" });
 		preloadObserver.observe(layer);
+		const syncVisibility = () => {
+			if (document.hidden || !isInView) {
+				timeline?.pause();
+				return;
+			}
+			start();
+			if (!released) timeline?.resume();
+		};
+		document.addEventListener("visibilitychange", syncVisibility);
+		const stopForReducedMotion = () => {
+			if (!reducedMotionQuery.matches) return;
+			preloadObserver.disconnect();
+			timeline?.kill();
+			finish();
+		};
+		reducedMotionQuery.addEventListener("change", stopForReducedMotion);
+		// 键盘进入内容时完成入场，避免焦点跟着仍在位移的链接移动。
+		const finishForFocus = () => {
+			if (layer.dataset.guideOpening === "playing") timeline?.progress(1);
+		};
+		layer.addEventListener("focusin", finishForFocus);
 
 		cleanups.push(() => {
 			preloadObserver.disconnect();
+			document.removeEventListener("visibilitychange", syncVisibility);
+			reducedMotionQuery.removeEventListener("change", stopForReducedMotion);
+			layer.removeEventListener("focusin", finishForFocus);
 			timeline?.kill();
 			release();
-		});
-	}
-
-	function initVisitStats(layer: HTMLElement) {
-		const statsBaseUrl = layer.dataset.statsBaseUrl;
-		const statsShareId = layer.dataset.statsShareId;
-		if (!statsBaseUrl || !statsShareId) return;
-		const detail = layer.querySelector<HTMLElement>(".data-card[data-stat-kind='visits'] .data-card__detail");
-		const valueNodes = layer.querySelectorAll<HTMLElement>("[data-stat-value]");
-		shareCache.fetch(async () => {
-			const response = await fetch(`${statsBaseUrl}/api/share/${statsShareId}`);
-			if (!response.ok) throw new Error("获取 Umami 分享信息失败");
-			const share = await response.json() as { websiteId?: string; entityId?: string; token?: string };
-			const websiteId = share.websiteId || share.entityId;
-			if (!websiteId) throw new Error("Umami 分享信息缺少 websiteId");
-			return { websiteId, token: share.token || statsShareId };
-		}).then(({ websiteId, token }) => fetch(`${statsBaseUrl}/api/websites/${websiteId}/stats?startAt=0&endAt=${Date.now()}`, {
-			headers: { "x-umami-share-token": token, "x-umami-share-context": "1", "Content-Type": "application/json" },
-		})).then((response) => response.json()).then((data: { uv?: number; visitors?: number; pv?: number; pageviews?: number }) => {
-			const uvRaw = data.uv || data.visitors || 0;
-			const pvRaw = data.pv || data.pageviews || 0;
-			const uvCompact = formatCompactNumber(uvRaw);
-			const pvCompact = formatCompactNumber(pvRaw);
-			if (detail) detail.textContent = `${i18n(I18nKey.siteStatsVisitors)} ${uvCompact} · ${i18n(I18nKey.viewsBrowseLabel)} ${pvCompact}`;
-			valueNodes.forEach((node) => {
-				const isUv = node.dataset.statValue === "UV";
-				const isPv = node.dataset.statValue === "PV";
-				if (!isUv && !isPv) return;
-				const value = isUv ? uvRaw : pvRaw;
-				node.dataset.compactValue = formatCompactNumber(value);
-				node.dataset.fullValue = Number(value).toLocaleString();
-				node.textContent = node.dataset.compactValue;
-			});
-		}).catch(() => {
-			if (detail) detail.textContent = `${i18n(I18nKey.siteStatsVisitors)} -- · ${i18n(I18nKey.viewsBrowseLabel)} --`;
-		});
-	}
-
-	function initMetricCards(layer: HTMLElement) {
-		if (!window.matchMedia("(hover: hover) and (pointer: fine)").matches || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
-		const cards = Array.from(layer.querySelectorAll<HTMLElement>("[data-card-interactive]"));
-		cards.forEach((card) => {
-			const hover = card.querySelector<HTMLElement>(".data-card__hover");
-			const orb = card.querySelector<HTMLElement>(".data-card__hover-orb");
-			const header = card.querySelector<HTMLElement>(".data-card__hover-header");
-			const title = card.querySelector<HTMLElement>(".data-card__hover-title");
-			const pills = Array.from(card.querySelectorAll<HTMLElement>(".data-card__hover-pill"));
-			if (!hover || !orb || !header || !title || pills.length === 0) return;
-			const visitValues = card.dataset.statKind === "visits" ? Array.from(card.querySelectorAll<HTMLElement>("[data-stat-value]")) : [];
-			const timeline = gsap.timeline({ paused: true, defaults: { ease: "power3.out" }, onReverseComplete: () => visitValues.forEach((node) => { if (node.dataset.compactValue) node.textContent = node.dataset.compactValue; }) });
-			timeline.set(hover, { autoAlpha: 1 }).fromTo(orb, { xPercent: -50, yPercent: -50, scale: 0.18 }, { xPercent: -50, yPercent: -50, scale: 1, duration: 0.58, ease: "expo.out" }, 0).fromTo([header, title], { autoAlpha: 0, y: 18 }, { autoAlpha: 1, y: 0, duration: 0.28, stagger: 0.05 }, 0.38).fromTo(pills, { autoAlpha: 0, y: -44, scale: 0.82 }, { autoAlpha: 1, y: 0, scale: 1, duration: 0.44, stagger: 0.08, ease: "back.out(1.7)" }, 0.5);
-			const enter = () => { timeline.play(); visitValues.forEach((node) => { if (node.dataset.fullValue) node.textContent = node.dataset.fullValue; }); };
-			const leave = () => timeline.reverse();
-			card.addEventListener("pointerenter", enter);
-			card.addEventListener("pointerleave", leave);
-			cleanups.push(() => { card.removeEventListener("pointerenter", enter); card.removeEventListener("pointerleave", leave); timeline.kill(); });
 		});
 	}
 
@@ -684,6 +405,7 @@ const statsShareId = umamiConfig?.shareId ?? "";
 
 		let flat = false;
 		let intentTimer: number | undefined;
+		let focusOutTimer = 0;
 
 		// 每张卡的固定散落姿态（rem 平移 + 旋转），模拟随手丢下的卡牌堆，不围成弧线
 		const SCATTER_POSES = [
@@ -712,10 +434,10 @@ const statsShareId = umamiConfig?.shareId ?? "";
 		const applyState = (nextFlat: boolean, immediate = false) => {
 			flat = nextFlat;
 			card.classList.toggle("is-flat", flat);
-			const ease = flat ? "power3.out" : "back.out(1.4)";
+			const ease = flat ? "expo.out" : "power4.out";
 			if (flat) {
 				links.forEach((link, index) => {
-					gsap.to(link, { x: 0, y: 0, rotation: 0, zIndex: index, duration: immediate ? 0 : 0.45, ease, overwrite: "auto", delay: immediate ? 0 : index * 0.02 });
+					gsap.to(link, { x: 0, y: 0, rotation: 0, zIndex: index, duration: immediate ? 0 : 0.72, ease, overwrite: "auto", delay: immediate ? 0 : index * 0.035 });
 				});
 				return;
 			}
@@ -723,7 +445,7 @@ const statsShareId = umamiConfig?.shareId ?? "";
 			links.forEach((link, index) => {
 				const target = targets[index];
 				if (!target) return;
-				gsap.to(link, { x: target.x, y: target.y, rotation: target.rotation, zIndex: target.zIndex, duration: immediate ? 0 : 0.55, ease, overwrite: "auto", delay: immediate ? 0 : index * 0.03 });
+				gsap.to(link, { x: target.x, y: target.y, rotation: target.rotation, zIndex: target.zIndex, duration: immediate ? 0 : 0.85, ease, overwrite: "auto", delay: immediate ? 0 : index * 0.04 });
 			});
 		};
 
@@ -740,7 +462,10 @@ const statsShareId = umamiConfig?.shareId ?? "";
 		const enter = () => scheduleIntent(true, 70);
 		const leave = () => scheduleIntent(false, 140);
 		const focusIn = () => scheduleIntent(true, 0);
-		const focusOut = () => { window.setTimeout(() => { if (!card.contains(document.activeElement)) scheduleIntent(false, 80); }, 0); };
+		const focusOut = () => {
+			window.clearTimeout(focusOutTimer);
+			focusOutTimer = window.setTimeout(() => { if (!card.contains(document.activeElement)) scheduleIntent(false, 80); }, 0);
+		};
 
 		card.addEventListener("pointerenter", enter);
 		card.addEventListener("pointerleave", leave);
@@ -748,6 +473,7 @@ const statsShareId = umamiConfig?.shareId ?? "";
 		card.addEventListener("focusout", focusOut);
 		cleanups.push(() => {
 			if (intentTimer !== undefined) window.clearTimeout(intentTimer);
+			window.clearTimeout(focusOutTimer);
 			card.removeEventListener("pointerenter", enter);
 			card.removeEventListener("pointerleave", leave);
 			card.removeEventListener("focusin", focusIn);
@@ -759,7 +485,7 @@ const statsShareId = umamiConfig?.shareId ?? "";
 	}
 
 	function initGuideRotators(layer: HTMLElement) {
-		const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+		const reducedMotionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 		const rotators = Array.from(layer.querySelectorAll<HTMLElement>("[data-guide-rotator]"));
 		rotators.forEach((rotator) => {
 			const slides = Array.from(rotator.querySelectorAll<HTMLElement>("[data-guide-slide]"));
@@ -773,28 +499,35 @@ const statsShareId = umamiConfig?.shareId ?? "";
 			let activeIndex = 0;
 			let intervalId: number | undefined;
 			let transitionId = 0;
+			let transitionTimer = 0;
+			let rotatorInView = false;
+			let rotatorHovered = false;
+			let rotatorHasFocus = false;
 			const axis = rotator.dataset.guideAxis === "vertical" ? "vertical" : "horizontal";
 			const nextButtons = Array.from(rotator.querySelectorAll<HTMLButtonElement>("[data-guide-next]"));
 
 			const setActive = (nextIndex: number) => {
 				const resolvedIndex = (nextIndex + slides.length) % slides.length;
 				if (resolvedIndex === activeIndex) {
-					rotator.animate([{ transform: "translateY(0)" }, { transform: "translateY(-0.2rem)" }, { transform: "translateY(0)" }], { duration: 240, easing: "ease-out" });
 					return;
 				}
 				const currentSlide = slides[activeIndex];
 				const nextSlide = slides[resolvedIndex];
 				if (!currentSlide || !nextSlide) return;
 				const currentTransition = ++transitionId;
-				currentSlide.getAnimations().forEach((animation) => animation.cancel());
-				nextSlide.getAnimations().forEach((animation) => animation.cancel());
+				window.clearTimeout(transitionTimer);
+				slides.forEach((slide, index) => {
+					slide.getAnimations().forEach((animation) => animation.cancel());
+					slide.hidden = index !== activeIndex;
+					slide.setAttribute("aria-hidden", String(index !== activeIndex));
+				});
 				activeIndex = resolvedIndex;
 				syncBackground(resolvedIndex);
 				nextSlide.hidden = false;
 				nextSlide.setAttribute("aria-hidden", "false");
 				dots.forEach((dot, index) => dot.setAttribute("aria-current", String(index === activeIndex)));
 
-				if (reduceMotion) {
+				if (reducedMotionQuery.matches) {
 					currentSlide.hidden = true;
 					currentSlide.setAttribute("aria-hidden", "true");
 					return;
@@ -807,37 +540,60 @@ const statsShareId = umamiConfig?.shareId ?? "";
 				const outgoing = vertical
 					? [{ transform: "translateY(0)" }, { transform: "translateY(-110%)" }]
 					: [{ transform: "translateX(0)" }, { transform: "translateX(-110%)" }];
-				const options: KeyframeAnimationOptions = { duration: 520, easing: "cubic-bezier(0.65, 0, 0.35, 1)", fill: "both" };
+				const options: KeyframeAnimationOptions = { duration: 760, easing: "cubic-bezier(0.16, 1, 0.3, 1)", fill: "both" };
 				currentSlide.animate(outgoing, options);
 				nextSlide.animate(incoming, options);
 				// 后台标签页会节流 rAF，WAAPI 长时间不推进导致 finished 不落定、
 				// 旧 slide 滞留在原位叠加；用固定超时兜底收敛到终态
-				window.setTimeout(() => {
+				transitionTimer = window.setTimeout(() => {
+					transitionTimer = 0;
 					if (currentTransition !== transitionId) return;
 					currentSlide.hidden = true;
 					currentSlide.setAttribute("aria-hidden", "true");
 					currentSlide.getAnimations().forEach((animation) => animation.cancel());
 					nextSlide.getAnimations().forEach((animation) => animation.cancel());
 					nextSlide.style.transform = "";
-				}, 540);
+				}, 780);
 			};
 			const stop = () => {
 				if (intervalId !== undefined) window.clearInterval(intervalId);
 				intervalId = undefined;
 			};
 			const start = () => {
-				if (reduceMotion || slides.length < 2 || intervalId !== undefined) return;
+				if (reducedMotionQuery.matches || !rotatorInView || document.hidden || rotatorHovered || rotatorHasFocus || slides.length < 2 || intervalId !== undefined) return;
 				intervalId = window.setInterval(() => setActive(activeIndex + 1), 5000);
 			};
-			const pause = () => stop();
-			const resume = () => start();
+			const pause = () => { rotatorHovered = true; stop(); };
+			const resume = () => { rotatorHovered = false; start(); };
+			const focusIn = () => { rotatorHasFocus = true; stop(); };
 			const focusOut = (event: FocusEvent) => {
-				if (!rotator.contains(event.relatedTarget as Node | null)) start();
+				rotatorHasFocus = event.relatedTarget instanceof Node && rotator.contains(event.relatedTarget);
+				start();
 			};
+			const syncPlayback = () => {
+				stop();
+				if (reducedMotionQuery.matches || document.hidden || !rotatorInView) {
+					transitionId += 1;
+					window.clearTimeout(transitionTimer);
+					slides.forEach((slide, index) => {
+						slide.getAnimations().forEach((animation) => animation.cancel());
+						slide.hidden = index !== activeIndex;
+						slide.setAttribute("aria-hidden", String(index !== activeIndex));
+					});
+				}
+				start();
+			};
+			const rotatorVisibility = new IntersectionObserver((entries) => {
+				rotatorInView = entries.some((entry) => entry.isIntersecting);
+				syncPlayback();
+			});
+			rotatorVisibility.observe(rotator);
+			document.addEventListener("visibilitychange", syncPlayback);
+			reducedMotionQuery.addEventListener("change", syncPlayback);
 
 			rotator.addEventListener("pointerenter", pause);
 			rotator.addEventListener("pointerleave", resume);
-			rotator.addEventListener("focusin", pause);
+			rotator.addEventListener("focusin", focusIn);
 			rotator.addEventListener("focusout", focusOut);
 			const dotHandlers = dots.map((dot, index) => {
 				const handler = () => setActive(index);
@@ -862,178 +618,20 @@ const statsShareId = umamiConfig?.shareId ?? "";
 			start();
 			cleanups.push(() => {
 				stop();
+				transitionId += 1;
+				window.clearTimeout(transitionTimer);
+				rotatorVisibility.disconnect();
+				document.removeEventListener("visibilitychange", syncPlayback);
+				reducedMotionQuery.removeEventListener("change", syncPlayback);
+				slides.forEach((slide) => slide.getAnimations().forEach((animation) => animation.cancel()));
 				rotator.removeEventListener("pointerenter", pause);
 				rotator.removeEventListener("pointerleave", resume);
-				rotator.removeEventListener("focusin", pause);
+				rotator.removeEventListener("focusin", focusIn);
 				rotator.removeEventListener("focusout", focusOut);
 				dotHandlers.forEach(([dot, handler]) => dot.removeEventListener("click", handler));
 				nextButtons.forEach((button) => button.removeEventListener("click", nextHandler));
 				slideHandlers.forEach(([slide, handler]) => slide.removeEventListener("click", handler));
 			});
-		});
-	}
-
-	function initContactOverlay(layer: HTMLElement) {
-		const contact = layer.querySelector<HTMLElement>("[data-guide-contact]");
-		const template = contact?.querySelector<HTMLTemplateElement>("[data-guide-contact-template]");
-		if (!contact || !template) return;
-		const overlay = template.content.firstElementChild?.cloneNode(true);
-		if (!(overlay instanceof HTMLElement)) return;
-		const lines = Array.from(overlay.querySelectorAll<SVGLineElement>(".guide-contact__overlay-line")).map((element) => ({
-			element,
-			x2: element.getAttribute("x2") ?? "",
-			y2: element.getAttribute("y2") ?? "",
-		}));
-		const regions = Array.from(overlay.querySelectorAll<HTMLAnchorElement>(".guide-contact__region"));
-		// 新布局固定为四个角区和中央区；链接数量不匹配时不挂载。
-		if (lines.length !== 4 || regions.length !== 5) return;
-		const fineHover = window.matchMedia("(hover: hover) and (pointer: fine)");
-		const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
-
-		let active = false;
-		let mounted = false;
-		let pointerInside = false;
-		let touchOpen = false;
-		let intentTimer: number | undefined;
-		let removeTimer: number | undefined;
-
-		// 硬重置到退场终态，保证每次挂载都从干净状态起步
-		const resetVisuals = () => {
-			gsap.set(overlay, { autoAlpha: 0 });
-			gsap.set(regions, { autoAlpha: 0, scale: 0.82 });
-			lines.forEach(({ element }) => {
-				element.setAttribute("x2", element.getAttribute("x1") ?? "");
-				element.setAttribute("y2", element.getAttribute("y1") ?? "");
-			});
-		};
-		resetVisuals();
-
-		// 激活时才注入覆盖层，避免隐藏的区域链接拦截卡片点击；退场动画播完后再移除
-		const mount = () => {
-			if (removeTimer !== undefined) { window.clearTimeout(removeTimer); removeTimer = undefined; }
-			if (mounted) return;
-			mounted = true;
-			resetVisuals();
-			contact.appendChild(overlay);
-			contact.classList.add("has-overlay");
-		};
-		const unmount = () => {
-			if (!mounted || active) return;
-			mounted = false;
-			gsap.killTweensOf([overlay, ...lines.map(({ element }) => element), ...regions]);
-			overlay.remove();
-			contact.classList.remove("has-overlay");
-		};
-
-		const setActive = (next: boolean) => {
-			if (next) {
-				mount();
-				if (active) return;
-				active = true;
-				if (reduceMotion.matches) {
-					gsap.killTweensOf([overlay, ...lines.map(({ element }) => element), ...regions]);
-					lines.forEach(({ element, x2, y2 }) => {
-						element.setAttribute("x2", x2);
-						element.setAttribute("y2", y2);
-					});
-					gsap.set(overlay, { autoAlpha: 1 });
-					gsap.set(regions, { autoAlpha: 1, scale: 1 });
-					return;
-				}
-				gsap.to(overlay, { autoAlpha: 1, duration: 0.1, ease: "power1.out", overwrite: "auto" });
-				lines.forEach(({ element, x2, y2 }, index) => {
-					gsap.to(element, { attr: { x2, y2 }, duration: 0.2, ease: "power3.out", delay: index * 0.03, overwrite: "auto" });
-				});
-				regions.forEach((region, index) => {
-					gsap.to(region, { autoAlpha: 1, scale: 1, duration: 0.22, ease: "back.out(1.8)", delay: 0.26 + index * 0.03, overwrite: "auto" });
-				});
-				return;
-			}
-			if (!active) return;
-			active = false;
-			if (reduceMotion.matches) {
-				unmount();
-				return;
-			}
-			gsap.to(regions, { autoAlpha: 0, scale: 0.82, duration: 0.16, ease: "power2.in", overwrite: "auto" });
-			lines.forEach(({ element }, index) => {
-				// 起点坐标在创建时必然存在，兜底仅为类型收窄
-				const x1 = element.getAttribute("x1") ?? element.getAttribute("x2") ?? "0";
-				const y1 = element.getAttribute("y1") ?? element.getAttribute("y2") ?? "0";
-				gsap.to(element, { attr: { x2: x1, y2: y1 }, duration: 0.2, ease: "power3.inOut", delay: 0.04 + index * 0.025, overwrite: "auto" });
-			});
-			gsap.to(overlay, { autoAlpha: 0, duration: 0.16, delay: 0.18, ease: "power1.in", overwrite: "auto" });
-			if (removeTimer !== undefined) window.clearTimeout(removeTimer);
-			removeTimer = window.setTimeout(() => { removeTimer = undefined; unmount(); }, 500);
-		};
-
-		const sync = () => setActive(pointerInside || contact.matches(":focus-within") || touchOpen);
-		const schedule = (delay: number) => {
-			if (intentTimer !== undefined) window.clearTimeout(intentTimer);
-			intentTimer = window.setTimeout(() => { intentTimer = undefined; sync(); }, delay);
-		};
-		const enter = () => {
-			if (!fineHover.matches) return;
-			pointerInside = true;
-			schedule(70);
-		};
-		const leave = () => {
-			if (!fineHover.matches) return;
-			pointerInside = false;
-			schedule(140);
-		};
-		const drift = () => {
-			if (!fineHover.matches || pointerInside) return;
-			pointerInside = true;
-			schedule(0);
-		};
-		const focusIn = () => schedule(0);
-		const focusOut = () => schedule(90);
-		const openTouchOverlay = (event: MouseEvent) => {
-			if (fineHover.matches || (event.target as Element).closest("a")) return;
-			touchOpen = true;
-			sync();
-		};
-		const closeOutside = (event: PointerEvent) => {
-			if (fineHover.matches || contact.contains(event.target as Node)) return;
-			touchOpen = false;
-			if (document.activeElement instanceof HTMLElement && contact.contains(document.activeElement)) {
-				document.activeElement.blur();
-			}
-			sync();
-		};
-		const closeOnEscape = (event: KeyboardEvent) => {
-			if (event.key !== "Escape") return;
-			touchOpen = false;
-			pointerInside = false;
-			if (document.activeElement instanceof HTMLElement && contact.contains(document.activeElement)) {
-				document.activeElement.blur();
-			}
-			setActive(false);
-		};
-
-		contact.addEventListener("pointerenter", enter);
-		contact.addEventListener("pointerleave", leave);
-		contact.addEventListener("pointermove", drift);
-		contact.addEventListener("focusin", focusIn);
-		contact.addEventListener("focusout", focusOut);
-		contact.addEventListener("click", openTouchOverlay);
-		contact.addEventListener("keydown", closeOnEscape);
-		document.addEventListener("pointerdown", closeOutside);
-		cleanups.push(() => {
-			if (intentTimer !== undefined) window.clearTimeout(intentTimer);
-			if (removeTimer !== undefined) window.clearTimeout(removeTimer);
-			contact.removeEventListener("pointerenter", enter);
-			contact.removeEventListener("pointerleave", leave);
-			contact.removeEventListener("pointermove", drift);
-			contact.removeEventListener("focusin", focusIn);
-			contact.removeEventListener("focusout", focusOut);
-			contact.removeEventListener("click", openTouchOverlay);
-			contact.removeEventListener("keydown", closeOnEscape);
-			document.removeEventListener("pointerdown", closeOutside);
-			gsap.killTweensOf([overlay, ...lines.map(({ element }) => element), ...regions]);
-			overlay.remove();
-			contact.classList.remove("has-overlay");
 		});
 	}
 
@@ -1049,11 +647,8 @@ const statsShareId = umamiConfig?.shareId ?? "";
 			return;
 		}
 		const token = ++guideOpeningToken;
-		initVisitStats(layer);
-		initMetricCards(layer);
 		initTagFan(layer);
 		initGuideRotators(layer);
-		initContactOverlay(layer);
 		void initGuideOpening(layer, token);
 	}
 

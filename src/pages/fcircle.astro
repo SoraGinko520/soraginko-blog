@@ -1,0 +1,120 @@
+---
+import PageTitle from "@/components/common/PageTitle.astro";
+import { friendsConfig, siteConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import MainGridLayout from "@/layouts/MainGridLayout.astro";
+import {
+	createFcircleDateGroups,
+	getFcircleStats,
+} from "@/utils/fcircle-controller";
+import { buildFcircleFeed } from "@/utils/fcircle-feed";
+import "@/styles/pages/fcircle.css";
+
+if (!siteConfig.pages.fcircle) {
+	return Astro.redirect("/404/");
+}
+
+const title = i18n(I18nKey.fcircleTitle);
+const description = i18n(I18nKey.fcircleDescription);
+const items = await buildFcircleFeed(friendsConfig);
+const dateOptions = {
+	locale: siteConfig.lang.replace("_", "-"),
+	timeZone: siteConfig.timezone || "UTC",
+	today: i18n(I18nKey.fcircleToday),
+	yesterday: i18n(I18nKey.fcircleYesterday),
+	dayBeforeYesterday: i18n(I18nKey.fcircleDayBeforeYesterday),
+};
+const groups = createFcircleDateGroups(items, dateOptions);
+const stats = getFcircleStats(items, dateOptions.timeZone);
+const statLabels = [
+	{
+		key: "todayCount",
+		value: stats.todayCount,
+		label: i18n(I18nKey.fcircleTodayUpdates),
+	},
+	{
+		key: "weekCount",
+		value: stats.weekCount,
+		label: i18n(I18nKey.fcircleWeekUpdates),
+	},
+	{
+		key: "articleCount",
+		value: stats.articleCount,
+		label: i18n(I18nKey.fcircleArticleCount),
+	},
+	{
+		key: "siteCount",
+		value: stats.siteCount,
+		label: i18n(I18nKey.fcircleSiteCount),
+	},
+];
+---
+
+<MainGridLayout title={title} description={description} hasOwnH1={true}>
+	<section class="fcircle" data-fcircle data-fcircle-view="timeline" data-fcircle-dates={JSON.stringify(dateOptions)}>
+		<header class="fcircle__header">
+			<PageTitle title={title} description={description} eyebrow="FRIEND CIRCLE" variant="stacked" />
+			{items.length > 0 && (
+				<div class="fcircle__switcher" role="tablist" aria-label={i18n(I18nKey.fcircleViewLabel)} data-fcircle-switcher hidden>
+					<button id="fcircle-timeline-tab" class="fcircle__view-button" type="button" role="tab" aria-selected="true" aria-controls="fcircle-feed" data-fcircle-view-button="timeline">{i18n(I18nKey.fcircleTimeline)}</button>
+					<button id="fcircle-grid-tab" class="fcircle__view-button" type="button" role="tab" aria-selected="false" aria-controls="fcircle-feed" tabindex="-1" data-fcircle-view-button="grid">{i18n(I18nKey.fcircleGrid)}</button>
+				</div>
+			)}
+		</header>
+
+		<dl class="fcircle__stats">
+			{statLabels.map((stat) => <div><dt>{stat.label}</dt><dd data-fcircle-stat={stat.key}>{stat.value}</dd></div>)}
+		</dl>
+
+		{items.length === 0 ? (
+			<p class="fcircle__empty">{i18n(I18nKey.fcircleEmpty)}</p>
+		) : (
+			<div id="fcircle-feed" class="fcircle__feed" role="tabpanel" aria-labelledby="fcircle-timeline-tab" tabindex="0" data-fcircle-panel>
+				<ol class="fcircle__groups" role="list">
+					{groups.map((group) => (
+						<li class="fcircle__day-group">
+							<header class="fcircle__day-heading">
+								<h2 data-fcircle-date-label={group.dateKey}>{group.label}</h2>
+								<time datetime={group.dateKey}>{group.fullDate}</time>
+								<span>{i18n(I18nKey.fcircleUpdatesCount).replace("{count}", String(group.items.length))}</span>
+							</header>
+							<ul class="fcircle__day-items" role="list">
+								{group.items.map((item) => (
+									<li class="fcircle__item" data-fcircle-item data-fcircle-published={item.publishedAt} data-fcircle-site={item.friendUrl}>
+										<article class="fcircle__article">
+											<div class="fcircle__author">
+												<span class:list={["fcircle__avatar", { "fcircle__avatar--text": !item.friendAvatar }]} aria-hidden="true">
+													<span>{item.friendName.slice(0, 1)}</span>
+													{item.friendAvatar && <img src={item.friendAvatar} alt="" width="44" height="44" loading="lazy" decoding="async" data-fcircle-avatar />}
+												</span>
+												<a href={item.friendUrl} target="_blank" rel="noopener noreferrer">{item.friendName}</a>
+												<time datetime={item.publishedAt}>{group.fullDate}</time>
+											</div>
+											<h3><a href={item.url} target="_blank" rel="noopener noreferrer">{item.title}</a></h3>
+											{item.summary && <p class="fcircle__summary">{item.summary}</p>}
+											{item.tags.length > 0 && <ul class="fcircle__tags" role="list">{item.tags.map((tag) => <li>{tag}</li>)}</ul>}
+										</article>
+									</li>
+								))}
+							</ul>
+						</li>
+					))}
+				</ol>
+			</div>
+		)}
+	</section>
+</MainGridLayout>
+
+<script>
+	import { initFcirclePage } from "@/utils/fcircle-controller";
+	import { definePageIsland } from "@/utils/swup-lifecycle";
+
+	let cleanupFcircle: (() => void) | null = null;
+	definePageIsland({
+		name: "fcircle:view",
+		match: () => Boolean(document.querySelector("[data-fcircle]")),
+		mount: () => { cleanupFcircle = initFcirclePage(); },
+		unmount: () => { cleanupFcircle?.(); cleanupFcircle = null; },
+	});
+</script>

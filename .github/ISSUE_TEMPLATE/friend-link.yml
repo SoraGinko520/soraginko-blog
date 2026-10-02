@@ -1,0 +1,63 @@
+name: 申请友链
+description: 向 SoraGinko 申请添加友链
+title: "[友链申请] "
+body:
+  - type: markdown
+    attributes:
+      value: |
+        ## 友链申请
+        请先在自己的友链页添加本站，再填写下面的信息。
+        - 名称：SoraGinko
+        - 链接：https://soraginko.moe
+        - 头像：https://soraginko.moe/assets/images/home/silver-author-avatar.5242def51b6f.webp
+        - 描述：记录技术、学习与生活的个人博客。
+
+        提交后先自动检查公开访问和回链，检查通过不代表已经收录。
+        站长或具有写权限的协作者评论 `/approve-friend` 后，才会写入友链配置。
+        如果检查失败，请更新本 Issue，申请人可评论 `/recheck-friend` 重查；每个申请最多自动检查四次。
+  - type: input
+    id: name
+    attributes:
+      label: 网站名称
+      placeholder: 例如：My Blog
+    validations:
+      required: true
+  - type: input
+    id: url
+    attributes:
+      label: 网站链接
+      placeholder: https://example.com
+    validations:
+      required: true
+  - type: input
+    id: avatar
+    attributes:
+      label: 头像链接
+      placeholder: https://example.com/avatar.webp
+    validations:
+      required: true
+  - type: input
+    id: description
+    attributes:
+      label: 网站描述
+      placeholder: 一句话描述
+    validations:
+      required: true
+  - type: input
+    id: friend_page
+    attributes:
+      label: 友链页面 URL
+      description: 必须有真正链接到 soraginko.moe 的 a 标签，仅出现名称或网址文本不能通过。
+      placeholder: https://example.com/friends/
+    validations:
+      required: true
+  - type: input
+    id: image
+    attributes:
+      label: 封面图片
+      description: 可选，填写公开的 HTTP(S) 图片地址。
+  - type: input
+    id: tag
+    attributes:
+      label: 网站标签
+      placeholder: Blog

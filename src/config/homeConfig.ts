@@ -6,7 +6,7 @@ export const homeConfig: HomeConfig = {
 	// 1. public 目录（以 "/" 开头，不优化）："/assets/images/avatar.webp"
 	// 2. src 目录（不以 "/" 开头，自动优化但会增加构建时间，推荐）："assets/images/avatar.webp"
 	// 3. 远程 URL："https://example.com/avatar.jpg"
-	avatar: "assets/images/avatar.webp",
+	avatar: "/assets/images/home/silver-author-avatar.5242def51b6f.webp",
 
 	// 名字
 	name: "SoraGinko",
@@ -15,13 +15,22 @@ export const homeConfig: HomeConfig = {
 	displayName: "SoraGinko",
 
 	// 职业/身份标签
-	occupation: "",
+	occupation: "[不知方向的本科小FW]",
 
 	// 个人签名（支持多条，会循环打字+删除效果）
-	bio: ["记录技术、学习与生活。"],
+	bio: ["不必行色匆匆，不必光芒四射，不必成为别人，只需做自己"],
 
 	hero: {
-		backgroundImage: "/assets/images/home/home.avif",
+		backgroundImage:
+			"/assets/images/home/silver-hero-cutout-clean.e0341cf230e2.webp",
+		authorAvatarImage:
+			"/assets/images/home/silver-author-avatar.5242def51b6f.webp",
+		artwork: {
+			width: 1683,
+			height: 935,
+			positionX: 0.35,
+			positionY: 1,
+		},
 		mosaic: {
 			rows: 4,
 			columns: 6,
@@ -52,40 +61,102 @@ export const homeConfig: HomeConfig = {
 			handle: "SoraGinko",
 		},
 		sticker: {
-			image: "/assets/images/home/character.avif",
-			alt: "黑猫角色贴纸",
-			eye: {
-				xPercent: 41.1,
-				yPercent: 48.2,
-				travelXPercent: 1.4,
-				travelYPercent: 1,
-			},
-			rightEye: {
-				xPercent: 64.1,
-				yPercent: 44.7,
-			},
-			mouth: {
-				xPercent: 53.4,
-				yPercent: 50.7,
-				widthPercent: 7.2,
-				heightPercent: 1.9,
-				rotation: -6,
-				travelScale: 0.45,
-			},
+			image: "/assets/images/home/silver-chibi-atlas.b234b2b02479.webp",
+			alt: "银白蓝发、手持眼罩的 Q 版空银子",
+			frameSize: 512,
+			frameCount: 4,
 		},
-		// 对话内容暂时留空，不继承原作者个人介绍。
+		// 复用上游的逐句简介 → 话题菜单 → 对话 → 返回菜单，不代表 AI 聊天。
+		// 自我介绍按本站实际状态改写，不沿用原作者的职业、经历或社群信息。
 		dialogue: {
-			enabled: false,
+			enabled: true,
 			speakers: { host: "SoraGinko", visitor: "访客" },
-			menuTitle: "",
 			typingSpeed: 45,
 			autoDelay: 1600,
-			intro: [],
-			topics: [],
+			menuTitle: "想聊点什么？",
+			intro: [
+				{
+					text: "你来了，要在这里坐一会儿吗？",
+					action: "greet",
+					expression: "greet",
+				},
+				{
+					text: "别着急，今天也可以慢慢来。",
+					action: "nod",
+					expression: "smile",
+				},
+				{ text: "刚刚是在看我吗？", action: "tilt", expression: "blink" },
+				{
+					text: "想说点什么的话，可以去留言板。",
+					action: "greet",
+					expression: "smile",
+				},
+				{
+					text: "不必行色匆匆，不必光芒四射，不必成为别人，只需做自己",
+					action: "nod",
+					expression: "smile",
+				},
+				{
+					text: "想打听什么？戳戳下面的话题，和你慢慢聊～",
+					action: "greet",
+					expression: "greet",
+				},
+			],
+			topics: [
+				{
+					title: "关于我",
+					lines: [
+						{ speaker: "visitor", text: "你是哪方面选手呀？" },
+						{
+							speaker: "host",
+							text: "还是一名在学习、慢慢找方向的本科生。这里是 SoraGinko 的个人博客。",
+							action: "nod",
+							expression: "smile",
+						},
+						{
+							speaker: "host",
+							text: "想用这个小地方记录技术、学习与生活，内容正在慢慢整理。",
+							action: "tilt",
+							expression: "smile",
+						},
+						{ speaker: "visitor", text: "听起来很忙的样子。" },
+						{
+							speaker: "host",
+							text: "不用着急。你也可以在留言板留下想说的话，我们慢慢来。",
+							action: "greet",
+							expression: "greet",
+						},
+					],
+				},
+				{
+					title: "博客特色",
+					lines: [
+						{ speaker: "visitor", text: "有什么好玩的功能吗？" },
+						{
+							speaker: "host",
+							text: "有首屏角色互动、站内搜索和留言板；这里的对话是预设台词，不是真实 AI 聊天。",
+							action: "greet",
+							expression: "greet",
+						},
+						{
+							speaker: "host",
+							text: "博客基于 Astro、Svelte 和 Swup。文章和生活内容还在整理，后面慢慢更新。",
+							action: "nod",
+							expression: "smile",
+						},
+						{
+							speaker: "host",
+							text: "慢慢逛，想交流时可以去留言板，也可以从导航找到 GitHub。",
+							action: "tilt",
+							expression: "smile",
+						},
+					],
+				},
+			],
 		},
-		// 玻璃雨珠 + 撞击水花（移动端自动降低密度，尊重 prefers-reduced-motion）
+		// 晴空首屏停用雨效，保留原配置便于后续换图。
 		rain: {
-			enabled: true,
+			enabled: false,
 			intensity: 0.6,
 			// 留空则随主题自动取色（暗色→白 / 浅色→深灰）；也可填 "#7fb0ff" 或 "127,176,255"
 			color: "#ffffff",
@@ -93,8 +164,8 @@ export const homeConfig: HomeConfig = {
 	},
 
 	dataLayer: {
-		visitImage: "/assets/images/home/home-data-1.avif",
-		archiveImage: "/assets/images/home/home-data-2.avif",
+		visitImage: "/assets/images/home/silver-visits-cutout.ee6b53cae8d9.webp",
+		archiveImage: "/assets/images/home/silver-archive-cutout.6265a772bb78.webp",
 		contactImage: "/assets/images/home/home-data-3.avif",
 	},
 
@@ -125,7 +196,7 @@ export const homeConfig: HomeConfig = {
 			composite: {
 				eyebrow: "PROLOGUE / RUN",
 				title: "记录日常",
-				description: "记录技术、学习与生活。",
+				description: "不必行色匆匆，不必光芒四射，不必成为别人，只需做自己",
 				alt: "第一幕插画",
 				// 明信片右下角的落款日期，按每张图的实际日期改；删掉即不显示
 			},

@@ -1,0 +1,31 @@
+---
+import ProjectCard from "@/components/pages/ProjectCard.astro";
+import { siteConfig } from "@/config";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+import {
+	getFeaturedProjects,
+	getGithubProjects,
+} from "@/utils/github-projects";
+import { url } from "@/utils/url-utils";
+import "@/styles/pages/projects.css";
+
+const projects = siteConfig.pages.projects
+	? getFeaturedProjects((await getGithubProjects()).projects)
+	: [];
+---
+
+{projects.length > 0 && (
+	<section class="home-featured-projects" aria-labelledby="featured-projects-title">
+		<header class="home-featured-projects__header">
+			<div>
+				<span class="projects-eyebrow">PROJECTS</span>
+				<h2 id="featured-projects-title">{i18n(I18nKey.projectsFeatured)}</h2>
+			</div>
+			<a class="project-link" href={url("/projects/")}>{i18n(I18nKey.projectsViewAll)}<span aria-hidden="true"> →</span></a>
+		</header>
+		<div class="projects-grid grid grid-cols-1 md:grid-cols-2">
+			{projects.map((project) => <ProjectCard project={project} headingLevel="h3" />)}
+		</div>
+	</section>
+)}

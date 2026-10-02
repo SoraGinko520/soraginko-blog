@@ -2,9 +2,65 @@ import Key from "../i18nKey";
 import type { Translation } from "../translation";
 
 export const ru: Translation = {
+	[Key.visitsPreview]:
+		"Подсчёт включён только на основном домене; предпросмотры исключены",
+	[Key.viewUmamiStats]: "Открыть аналитику Umami",
+	[Key.projectCover]: "обложка проекта",
+	[Key.viewPublicStats]: "Открыть статистику",
 	[Key.home]: "Главная",
 	[Key.about]: "О нас",
 	[Key.aboutMe]: "Обо мне",
+	[Key.social]: "Общение",
+	[Key.projects]: "Проекты",
+	[Key.projectsDescription]: "Мои проекты на GitHub и то, над чем я работаю.",
+	[Key.projectsSearch]: "Поиск проектов, технологий или описаний…",
+	[Key.projectsSearchLabel]: "Поиск проектов",
+	[Key.projectsFilterLabel]: "Фильтр по статусу проекта",
+	[Key.projectsAll]: "Все",
+	[Key.projectsPlanning]: "Планируется",
+	[Key.projectsDeveloping]: "В разработке",
+	[Key.projectsPublished]: "Опубликован",
+	[Key.projectsArchived]: "В архиве",
+	[Key.projectsGitHub]: "Репозиторий GitHub",
+	[Key.projectsDemo]: "Демо",
+	[Key.projectsDetails]: "Подробнее о проекте",
+	[Key.projectsUpdated]: "Обновлён",
+	[Key.projectsCreated]: "Создан",
+	[Key.projectsLanguage]: "Основной язык",
+	[Key.projectsStars]: "Звёзды",
+	[Key.projectsForks]: "Форки",
+	[Key.projectsEmpty]: "Публичных проектов пока нет.",
+	[Key.projectsEmptyHint]:
+		"Проекты синхронизируются с публичными репозиториями SoraGinko520 при сборке.",
+	[Key.projectsNoResults]:
+		"Нет подходящих проектов. Попробуйте другое слово или статус.",
+	[Key.projectsCount]: "Проектов: {count}",
+	[Key.projectsFeatured]: "Избранные проекты",
+	[Key.projectsViewAll]: "Посмотреть все",
+	[Key.projectsBack]: "К списку проектов",
+	[Key.projectsRepository]: "Репозиторий",
+	[Key.projectsCacheNotice]:
+		"GitHub недоступен. Показаны данные последней успешной синхронизации.",
+	[Key.projectsUnavailable]:
+		"GitHub недоступен. Повторите сборку позже для синхронизации.",
+	[Key.projectsNoDescription]: "Описание репозитория пока не задано.",
+	[Key.fcircleTitle]: "Обновления друзей",
+	[Key.fcircleDescription]: "Что нового написали друзья",
+	[Key.fcircleTodayUpdates]: "Обновления за сегодня",
+	[Key.fcircleWeekUpdates]: "Обновления за неделю",
+	[Key.fcircleArticleCount]: "Статьи",
+	[Key.fcircleSiteCount]: "Сайты",
+	[Key.fcircleTimeline]: "Хронология",
+	[Key.fcircleGrid]: "Сетка",
+	[Key.fcircleViewLabel]: "Вид обновлений",
+	[Key.fcircleToday]: "Сегодня",
+	[Key.fcircleYesterday]: "Вчера",
+	[Key.fcircleDayBeforeYesterday]: "Позавчера",
+	[Key.fcircleEmpty]:
+		"Обновлений друзей пока нет. Возможно, RSS / Atom ещё не настроен или авторы отдыхают.",
+	[Key.fcircleUpdatesCount]: "Обновлений: {count}",
+	[Key.aboutChangelogEmpty]: "Записей об обновлениях пока нет.",
+	[Key.changelogPageSite]: "Весь сайт",
 	[Key.life]: "Жизнь",
 	[Key.lifeDescription]: "Материалы о жизни готовятся.",
 	[Key.archive]: "Архив",
@@ -183,11 +239,16 @@ export const ru: Translation = {
 	[Key.siteStatsCategoryCount]: "Категории",
 	[Key.siteStatsTagCount]: "Теги",
 	[Key.siteStatsVisitors]: "Посетители",
-	[Key.siteStatsSource]: "Источник",
+	[Key.siteStatsSource]: "Источник данных",
 	[Key.footerRunningDays]: "Работает {days} дней",
 	[Key.footerRunningTime]:
 		"Работает {days} д. {hours} ч. {minutes} мин. {seconds} сек.",
 	[Key.footerLastUpdate]: "Последнее обновление {days} дней назад",
+	[Key.footerStartPending]:
+		"Отсчёт работы начнётся после первой отправки исходного кода",
+	[Key.footerUpdatedToday]: "Последнее обновление сегодня",
+	[Key.copyFailed]:
+		"Не удалось скопировать. Выделите и скопируйте текст вручную.",
 	[Key.today]: "Сегодня",
 
 	[Key.shareArticle]: "Поделиться",
@@ -296,19 +357,28 @@ export const ru: Translation = {
 	[Key.searchHintToggle]: "Ctrl+K переключить",
 	// ===== 首页 Hero 对话 =====
 	[Key.techBlogSuffix]: " — техноблог",
-	[Key.dialogueMenuTitle]: "О чём поговорим?",
 	[Key.characterDialogue]: "Диалог с персонажем",
+	[Key.dialogueStart]: "Начать",
+	[Key.dialogueReset]: "Сначала",
+	[Key.dialogueIdle]: "Нажмите «Начать», чтобы поздороваться",
+	[Key.dialoguePreset]: "Готовые реплики",
+	[Key.dialogueMenuTitle]: "О чём поговорим?",
 	[Key.dialoguePrev]: "Предыдущая реплика",
 	[Key.dialogueNext]: "Следующая реплика",
 	[Key.dialogueAutoPlay]: "Автовоспроизведение",
-	[Key.reopenDialogue]: "Снова открыть диалог",
-	[Key.dialogueRestoreHint]: "Мяу? Продолжим беседу?",
+	[Key.dialogueChooseTopic]: "Выбрать тему",
+	[Key.dialogueHide]: "Скрыть диалог",
+	[Key.dialogueShow]: "Показать диалог",
+	[Key.dialogueUnavailable]:
+		"Для готовых реплик нужен JavaScript. Блог по-прежнему доступен через навигацию.",
 
 	// ===== 首页数据层 =====
 	[Key.siteData]: "Данные сайта",
 	[Key.mapGuide]: "Путеводитель",
 	[Key.siteVisits]: "Посещения",
 	[Key.visitsLoading]: "Загрузка статистики посетителей",
+	[Key.visitsDisabled]: "Статистика посещений не настроена",
+	[Key.visitsUnavailable]: "Статистика посещений временно недоступна",
 	[Key.visitTrajectory]: "Траектория посещений",
 	[Key.articleArchive]: "Архив статей",
 	[Key.contentIndex]: "Индекс контента",
@@ -382,8 +452,9 @@ export const ru: Translation = {
 	[Key.friendFilterAria]: "Фильтр ссылок по типу",
 	[Key.applyFriendLink]: "Обменяться ссылками",
 	[Key.avatarSuffix]: " — аватар",
-	[Key.friendEmptyTitle]: "В этой категории нет ссылок",
-	[Key.friendEmptyHint]: "Выберите другой тип блогов",
+	[Key.friendEmptyTitle]: "Дружественных ссылок пока нет",
+	[Key.friendEmptyHint]:
+		"Список готовится. Свяжитесь со мной через гостевую книгу.",
 
 	// ===== 音乐可视化 =====
 	[Key.playModeList]: "По списку",
@@ -399,6 +470,9 @@ export const ru: Translation = {
 	[Key.playlistLoading]: "Загрузка плейлиста",
 	[Key.musicVisualizer]: "Музыкальная визуализация",
 	[Key.musicVisualizer3D]: "3D-визуализация",
+	[Key.musicVisualizerUnavailable]:
+		"3D-визуализация недоступна. Плеер продолжает работать.",
+	[Key.musicRetry]: "Перезагрузить плейлист",
 	[Key.musicVisualizerDescription]:
 		"Откройте иммерсивную музыкальную визуализацию, где воспроизведение превращается в динамичный трёхмерный ландшафт с атмосферными эффектами.",
 

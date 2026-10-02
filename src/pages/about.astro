@@ -1,5 +1,6 @@
 ---
 import { getEntry, render } from "astro:content";
+import ChangelogGraph from "@components/about/ChangelogGraph.astro";
 import Markdown from "@components/common/Markdown.astro";
 import PageTitle from "@/components/common/PageTitle.astro";
 import SiteStructuredData from "@/components/seo/SiteStructuredData.astro";
@@ -40,5 +41,8 @@ const { Content } = await render(aboutPost);
 		<Markdown class="mb-6 markdown-content onload-animation">
 			<Content />
 		</Markdown>
+		<section class="about-page__changelog" aria-label={i18n(I18nKey.aboutChangelogTitle)}>
+			<ChangelogGraph />
+		</section>
 	</div>
 </MainGridLayout>

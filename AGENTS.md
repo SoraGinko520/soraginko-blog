@@ -266,7 +266,16 @@ LQIP 占位数据由 [scripts/generate-lqips.ts](scripts/generate-lqips.ts) 在�
 
 ---
 
-## 六、已知不一致（不要照着错的文档改代码）
+## 六、用户可见改动的更新日志（SoraGinko 维护规则）
+
+每次对用户可见页面、功能、交互、导航、样式或部署行为进行实质修改时，在最终检查和提交之前，自动在 `src/content/spec/log.md` 顶部新增一条结构化日志。纯格式化、无用户可见影响的小改动可不记录；不要把每个 Git commit 机械转换成日志。只写真实完成内容，不把代码实现或模拟测试说成真实服务已部署。
+
+格式为二级标题和 `日期 / 类型 / 页面 / 简述` 四项元信息，之后是 Markdown 详情；最新记录在最上方，日期用实际当天日期。类型为 `feat / fix / style / refactor / chore`，页面 key 为 `home / projects / friends / fcircle / guestbook / about / archive / list / categories / post / life / site`，可填写多个页面。图谱目前只显示最上方 30 条，操作方式见 `docs/MAINTENANCE.md`。
+
+本规则只授权维护日志，不额外授权 Git 操作或上线；提交、推送及部署仍须遵守当前用户明确授权和验收门槛。
+
+## 七、已知不一致（不要照着错的文档改代码）
+
 
 - [README.md](README.md) 和 [src/config/README.md](src/config/README.md) 都还列着 `sidebarConfig.ts`，但该文件已随首页侧边栏移除而不存在，[src/types/config.ts](src/types/config.ts) 里也只剩一行提及 `sidebarLayoutConfig` 的过时注释。以目录实际内容为准。
 - `src/pages/posts/[...slug].astro` 直连 import 单个配置文件（`@/config/coverImageConfig` 等）而非走 `@/config` barrel，属于历史遗留的待收敛项，新代码统一用 barrel。

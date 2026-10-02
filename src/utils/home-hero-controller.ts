@@ -1,6 +1,10 @@
 import { gsap } from "gsap";
 import { ScrollTrigger } from "gsap/ScrollTrigger";
-import type { HeroMosaicConfig } from "@/types/config";
+import type {
+	HeroArtworkConfig,
+	HeroDialogueLine,
+	HeroMosaicConfig,
+} from "@/types/config";
 import { initHomeHeroDialogue } from "@/utils/home-hero-dialogue";
 import { createFlyText, type FlyTextHandle } from "@/utils/home-hero-fly-text";
 import { getHeroPinEndDistance } from "@/utils/home-hero-motion";
@@ -21,7 +25,147 @@ const DIALOGUE_REVEAL_END_TIME =
 	DIALOGUE_REVEAL_TIME + DIALOGUE_REVEAL_DURATION;
 const QUICK_ACTIONS_REVEAL_TIME = 1.14;
 const INTERACTION_HOLD_START = 1.31;
+const HERO_OPENING = {
+	duration: 1.55,
+	titleDuration: 0.65,
+	titleDelay: 1.25,
+	occupationDelay: 1.37,
+	tilesDelay: 1.05,
+	tilesDuration: 1.25,
+	ease: "expo.out",
+	interactionDelay: 3.3,
+};
+// 全幅插画只在预设互动时轻微回应；待机动作由 Q 版控制器承担。
+const HERO_ARTWORK_MOTION = {
+	maxTranslation: 6,
+	greetingTranslation: 4,
+	nodTranslation: 4,
+	reactionEnter: 0.38,
+	reactionReturn: 0.82,
+};
+const HERO_SIGNATURE_MOTION = {
+	revealDuration: 1.4,
+	reactionDuration: 1.1,
+};
 let initialReloadHandled = false;
+
+type HeroSceneController = {
+	setActive: (active: boolean) => void;
+	playReaction: (line: HeroDialogueLine) => void;
+	resetReaction: () => void;
+	destroy: () => void;
+};
+
+function getHeroArtworkRect(hero: HTMLElement, artwork: HeroArtworkConfig) {
+	const viewWidth = hero.clientWidth;
+	const viewHeight = hero.clientHeight;
+	const scale = Math.min(
+		viewWidth / artwork.width,
+		viewHeight / artwork.height,
+		1,
+	);
+	const width = artwork.width * scale;
+	const height = artwork.height * scale;
+	return {
+		x: (viewWidth - width) * artwork.positionX,
+		y: (viewHeight - height) * artwork.positionY,
+		width,
+		height,
+	};
+}
+
+/**
+ * 静态原画与碎片终点共用 scale-down 构图，不再放大裁切人物或创建整屏 GPU 资源。
+ * 回应仅使用临时 transform；同步略微放大避免位移露边，结束后恢复原始构图。
+ */
+function initHeroArtwork(hero: HTMLElement): HeroSceneController {
+	const foreground = hero.querySelector<HTMLElement>("[data-hero-foreground]");
+	if (!foreground)
+		return {
+			setActive: () => undefined,
+			playReaction: () => undefined,
+			resetReaction: () => undefined,
+			destroy: () => undefined,
+		};
+	let active = false;
+	let disposed = false;
+	let reaction: gsap.core.Timeline | null = null;
+	let reactionScale = 1;
+	const measureBounds = () => {
+		const width = hero.clientWidth;
+		const height = hero.clientHeight;
+		reactionScale =
+			1 +
+			(HERO_ARTWORK_MOTION.maxTranslation * 2) /
+				Math.max(1, Math.min(width, height));
+	};
+	const clearTransform = () => {
+		gsap.set(foreground, {
+			clearProps: "transform,transformOrigin,willChange",
+		});
+	};
+	const resetReaction = () => {
+		if (!reaction) return;
+		reaction.kill();
+		reaction = null;
+		clearTransform();
+	};
+	const observer = new ResizeObserver(() => {
+		measureBounds();
+		resetReaction();
+	});
+	measureBounds();
+	observer.observe(hero);
+
+	return {
+		setActive: (visible) => {
+			active = visible;
+			if (!visible) resetReaction();
+		},
+		playReaction: (line) => {
+			resetReaction();
+			if (!active || disposed || document.hidden) return;
+			const x =
+				line.action === "tilt"
+					? -HERO_ARTWORK_MOTION.maxTranslation
+					: line.action === "nod"
+						? 0
+						: HERO_ARTWORK_MOTION.greetingTranslation;
+			const y = line.action === "nod" ? -HERO_ARTWORK_MOTION.nodTranslation : 0;
+			gsap.set(foreground, {
+				willChange: "transform",
+				transformOrigin: "50% 50%",
+			});
+			reaction = gsap.timeline({
+				defaults: { ease: "power2.inOut" },
+				onComplete: () => {
+					reaction = null;
+					clearTransform();
+				},
+			});
+			reaction
+				.to(foreground, {
+					x,
+					y,
+					scale: reactionScale,
+					duration: HERO_ARTWORK_MOTION.reactionEnter,
+				})
+				.to(foreground, {
+					x: 0,
+					y: 0,
+					scale: 1,
+					duration: HERO_ARTWORK_MOTION.reactionReturn,
+				});
+		},
+		resetReaction,
+		destroy: () => {
+			disposed = true;
+			active = false;
+			resetReaction();
+			observer.disconnect();
+		},
+	};
+}
 
 /**
  * navigation.type 描述的是「当前 document 是怎么来的」，Swup 导航不会改它：
@@ -58,6 +202,7 @@ function resetHeroScrollOnReload() {
 
 type HeroRuntimeConfig = {
 	mosaic: HeroMosaicConfig;
+	artwork: HeroArtworkConfig;
 	rain: {
 		enabled?: boolean;
 		intensity?: number;
@@ -156,17 +301,25 @@ function clearMotionPending() {
 		?.classList.remove("home-page--motion-pending");
 }
 
-function setReducedMotionState(
-	hero: HTMLElement,
-	dialogue: ReturnType<typeof initHomeHeroDialogue>,
-) {
+function setReducedMotionState(hero: HTMLElement) {
 	hero.dataset.reducedMotion = "true";
-	hero.dataset.layerActive = "true";
+	hero.dataset.signaturePaused = "true";
 	hero.querySelectorAll<HTMLElement>("[data-hero-action]").forEach((action) => {
 		action.tabIndex = 0;
 		action.setAttribute("aria-hidden", "false");
 	});
-	dialogue.setSceneVisible(true);
+	gsap.set(
+		hero.querySelectorAll(
+			"[data-hero-title], [data-hero-contact], [data-hero-backdrop], [data-hero-action], .home-hero__title > span:first-child, .home-hero__occupation > span, .home-hero__name-badge, .home-hero__contact-platform, .home-hero__contact-handle",
+		),
+		{
+			autoAlpha: 1,
+			y: 0,
+			yPercent: 0,
+			scale: 1,
+			skewY: 0,
+		},
+	);
 	clearMotionPending();
 }
 
@@ -189,22 +342,38 @@ export function mountHomeHero() {
 		clearMotionPending();
 		return () => undefined;
 	}
+	const previousScrollRestoration = history.scrollRestoration;
 	const resetAfterReload = resetHeroScrollOnReload();
 
 	hero.dataset.heroMounted = "true";
+	hero.dataset.signaturePaused = "true";
 	// 本次挂载是否已被拆掉。document.fonts.ready 这类异步回调不能只看
 	// hero.dataset.heroMounted —— 那个标记会被下一次挂载重新写成 "true"，
 	// 上一次挂载的回调于是照样往下走，把 contact 拆成两套字符节点。
 	let disposed = false;
+	let reloadFrame = 0;
 	const abortController = new AbortController();
-	const dialogue = initHomeHeroDialogue(hero);
-	const destroySticker = initHomeHeroSticker(hero);
-	const rain = initHomeHeroRain(hero, config.rain);
 	const reducedMotionQuery = window.matchMedia(
 		"(prefers-reduced-motion: reduce)",
 	);
 	const mobileQuery = window.matchMedia("(max-width: 768px)");
+	const sticker = initHomeHeroSticker(hero);
+	const rain = initHomeHeroRain(hero, config.rain);
+	const artwork = initHeroArtwork(hero);
+	const dialogue = initHomeHeroDialogue(hero, {
+		onReaction: (line) => {
+			sticker.playReaction(line);
+			if (!reducedMotionQuery.matches) artwork.playReaction(line);
+			playContactReaction();
+		},
+		onReset: () => {
+			sticker.reset();
+			artwork.resetReaction();
+			stopContactReaction();
+		},
+	});
 	const title = hero.querySelector<HTMLElement>("[data-hero-title]");
+	const opening = hero.querySelector<HTMLElement>("[data-hero-opening]");
 	const contact = hero.querySelector<HTMLElement>("[data-hero-contact]");
 	const mosaic = hero.querySelector<HTMLElement>("[data-hero-mosaic]");
 	const mosaicComplete = hero.querySelector<HTMLElement>(
@@ -223,9 +392,12 @@ export function mountHomeHero() {
 	let idleTween: ReturnType<typeof gsap.timeline> | null = null;
 	let tilesIntroTimeline: ReturnType<typeof gsap.timeline> | null = null;
 	let textIntroTimeline: ReturnType<typeof gsap.timeline> | null = null;
+	let openingTimeline: ReturnType<typeof gsap.timeline> | null = null;
+	let interactionReady = false;
 	let tilesIntroDone = false;
 	let flyHandles: FlyTextHandle[] = [];
 	let contactScatterTimeline: ReturnType<typeof gsap.timeline> | null = null;
+	let contactReaction: gsap.core.Timeline | null = null;
 	let flyLayoutTimer = 0;
 	let activeTiles = new Set(
 		tiles.filter((tile) => tile.initiallyVisible).map((tile) => tile.element),
@@ -233,6 +405,41 @@ export function mountHomeHero() {
 	const random = createSeededRandom(config.mosaic.seed ^ 0x9e3779b9);
 
 	bindQuickActions(hero, abortController);
+	// JavaScript 不可用时保留 SSR 待机；正常开场先按住交互区。
+	if (dialogueRoot && !reducedMotionQuery.matches)
+		gsap.set(dialogueRoot, { autoAlpha: 0 });
+
+	function stopContactReaction(): void {
+		if (!contactReaction) return;
+		contactReaction.kill();
+		contactReaction = null;
+		for (const handle of flyHandles) handle.setNatural();
+		timeline?.render(timeline.time(), true, true);
+	}
+
+	function playContactReaction(): void {
+		// 字体加载晚于开场时，也必须先交出同一批字符的写入权。
+		textIntroTimeline?.progress(1).kill();
+		textIntroTimeline = null;
+		stopContactReaction();
+		const progress = timeline?.totalProgress() ?? 0;
+		const time = timeline?.time() ?? 0;
+		if (
+			reducedMotionQuery.matches ||
+			document.hidden ||
+			(progress > 0.002 && time < DIALOGUE_REVEAL_TIME)
+		)
+			return;
+		contactReaction = gsap.timeline({
+			onComplete: () => {
+				contactReaction = null;
+			},
+		});
+		for (const handle of flyHandles) {
+			const wave = handle.buildReaction(HERO_SIGNATURE_MOTION.reactionDuration);
+			if (wave) contactReaction.add(wave, 0);
+		}
+	}
 
 	const stopIdleRotation = () => {
 		window.clearInterval(idleTimer);
@@ -242,7 +449,14 @@ export function mountHomeHero() {
 	};
 
 	const startIdleRotation = () => {
-		if (idleTimer || reducedMotionQuery.matches) return;
+		if (
+			idleTimer ||
+			reducedMotionQuery.matches ||
+			!heroInView ||
+			document.hidden ||
+			mosaic?.style.visibility === "hidden"
+		)
+			return;
 		idleTimer = window.setInterval(() => {
 			const visible = tiles.filter((tile) => activeTiles.has(tile.element));
 			const hidden = tiles.filter((tile) => !activeTiles.has(tile.element));
@@ -308,14 +522,18 @@ export function mountHomeHero() {
 
 	// 用户开始滚动时立即完成进行中的入场动画，交由 scrub 时间线接管
 	const completePendingIntros = () => {
+		openingTimeline?.progress(1).kill();
+		openingTimeline = null;
+		interactionReady = true;
 		if (tilesIntroTimeline) {
-			tilesIntroTimeline.progress(1);
+			const intro = tilesIntroTimeline;
+			intro.progress(1).kill();
 			tilesIntroTimeline = null;
 		}
 		if (textIntroTimeline) {
-			textIntroTimeline.progress(1);
-			textIntroTimeline.kill();
+			const intro = textIntroTimeline;
 			textIntroTimeline = null;
+			intro.progress(1).kill();
 		}
 	};
 
@@ -326,26 +544,65 @@ export function mountHomeHero() {
 	 */
 	let heroInView = true;
 	let rainWanted = false;
+	let interactionVisible = false;
+	const syncInteraction = () => {
+		const progress = timeline?.totalProgress() ?? 0;
+		const time = progress * (timeline?.duration() ?? 1);
+		const visible =
+			interactionReady &&
+			(reducedMotionQuery.matches ||
+				hero.dataset.reducedMotion === "true" ||
+				((!contact || flyHandles.length > 0) && !textIntroTimeline)) &&
+			heroInView &&
+			!document.hidden &&
+			!mobileQuery.matches &&
+			(progress <= 0.002 || time >= DIALOGUE_REVEAL_TIME);
+		const signaturePaused = String(!visible || reducedMotionQuery.matches);
+		if (hero.dataset.signaturePaused !== signaturePaused)
+			hero.dataset.signaturePaused = signaturePaused;
+		// 晴空首屏已关闭雨效，人物回应不能依赖雨层的激活时间。
+		artwork.setActive(visible && !reducedMotionQuery.matches);
+		if (visible === interactionVisible) return;
+		interactionVisible = visible;
+		// 对话首次显示会立即触发角色回应，先启用小人以免丢掉第一段动作。
+		sticker.setSceneVisible(visible);
+		dialogue.setSceneVisible(visible);
+		hero.dataset.layerActive = String(visible);
+		if (dialogueRoot)
+			gsap.set(dialogueRoot, { autoAlpha: visible ? 1 : 0, y: 0 });
+		if (!visible) stopContactReaction();
+	};
 	const syncRain = () => {
-		rain.setActive(rainWanted && heroInView && !reducedMotionQuery.matches);
+		const active =
+			rainWanted &&
+			heroInView &&
+			!document.hidden &&
+			!reducedMotionQuery.matches;
+		rain.setActive(active);
+	};
+	const syncOpeningMotion = () => {
+		const paused = !heroInView || document.hidden || mobileQuery.matches;
+		openingTimeline?.paused(paused);
+		textIntroTimeline?.paused(paused);
 	};
 	const heroVisibility = new IntersectionObserver(
 		(entries) => {
 			for (const entry of entries) heroInView = entry.isIntersecting;
 			syncRain();
+			syncOpeningMotion();
+			syncInteraction();
+			if (!heroInView) stopIdleRotation();
+			else if (tilesIntroDone && (heroScrollTrigger?.progress ?? 0) <= 0.002)
+				startIdleRotation();
 		},
-		// 留一点提前量，滚回首屏时雨已经在跑，不会看到空档
-		{ rootMargin: "15% 0px" },
+		{ threshold: 0 },
 	);
 	heroVisibility.observe(hero);
 
 	const updateSceneState = (progress: number) => {
 		const timelineTime = progress * (timeline?.duration() ?? 1);
-		const rainActive = timelineTime >= RAIN_ACTIVATE_TIME;
-		const dialogueVisible = timelineTime >= DIALOGUE_REVEAL_TIME;
-		const layerActive = timelineTime >= QUICK_ACTIONS_REVEAL_TIME;
-		dialogue.setSceneVisible(dialogueVisible);
-		hero.dataset.layerActive = String(layerActive);
+		const rainActive = progress <= 0.002 || timelineTime >= RAIN_ACTIVATE_TIME;
+		const layerActive = interactionReady;
 		quickActions.forEach((action) => {
 			action.tabIndex = layerActive ? 0 : -1;
 			action.setAttribute("aria-hidden", String(!layerActive));
@@ -359,22 +616,20 @@ export function mountHomeHero() {
 			resetIdleTiles();
 			startIdleRotation();
 		}
+		syncInteraction();
 	};
 
 	const getMosaicTransform = () => {
-		if (!mosaic) return { y: 0, scale: 1 };
-		const heroWidth = hero.clientWidth;
-		const heroHeight = hero.clientHeight;
+		if (!mosaic) return { x: 0, y: 0, scale: 1 };
+		const rect = getHeroArtworkRect(hero, config.artwork);
 		const mosaicWidth = mosaic.offsetWidth;
 		const mosaicHeight = mosaic.offsetHeight;
+		const mosaicCenterX = mosaic.offsetLeft;
 		const mosaicCenterY = mosaic.offsetTop + mosaicHeight / 2;
 		return {
-			y: heroHeight / 2 - mosaicCenterY,
-			scale:
-				Math.max(
-					heroWidth / Math.max(1, mosaicWidth),
-					heroHeight / Math.max(1, mosaicHeight),
-				) * 1.015,
+			x: rect.x + rect.width / 2 - mosaicCenterX,
+			y: rect.y + rect.height / 2 - mosaicCenterY,
+			scale: rect.width / Math.max(1, mosaicWidth),
 		};
 	};
 
@@ -402,7 +657,7 @@ export function mountHomeHero() {
 			rotation: tile.rotation * 0.12,
 			scaleX: 0.66 + Math.min(0.16, Math.max(0, (tile.scale - 0.72) * 0.48)),
 			scaleY: 0.66 + Math.min(0.16, Math.max(0, (tile.scale - 0.72) * 0.48)),
-			blur: blurBase + (tile.blur / 5) * blurRange,
+			blur: Math.min(8, blurBase + (tile.blur / 5) * blurRange),
 		};
 	};
 
@@ -541,10 +796,10 @@ export function mountHomeHero() {
 	const buildTimeline = () => {
 		if (!title || !mosaic || !backdrop || tiles.length === 0) return;
 
-		gsap.set(mosaic, { xPercent: -50, y: 0, scale: 1 });
+		gsap.set(mosaic, { xPercent: -50, x: 0, y: 0, scale: 1, autoAlpha: 0 });
 		gsap.set(mosaicComplete, { autoAlpha: 0 });
-		gsap.set(backdrop, { autoAlpha: 0 });
-		gsap.set(dialogueRoot, { autoAlpha: 0, y: 16, scale: 0.96 });
+		gsap.set(backdrop, { autoAlpha: 1 });
+		gsap.set(dialogueRoot, { autoAlpha: 0, y: 0, scale: 1 });
 		gsap.set(quickActions, { autoAlpha: 0, y: 38, scale: 0.42 });
 		for (const tile of tiles) {
 			const transform = tile.initiallyVisible
@@ -567,23 +822,37 @@ export function mountHomeHero() {
 		});
 
 		timeline.to({}, { duration: 1 });
+		// 首屏保留完整原画；碎片拼合落到同一个不放大矩形，避免交接跳位。
+		timeline.fromTo(
+			backdrop,
+			{ autoAlpha: 1 },
+			{ autoAlpha: 0, duration: 0.06, immediateRender: false },
+			0.04,
+		);
+		timeline.fromTo(
+			mosaic,
+			{ autoAlpha: 0 },
+			{ autoAlpha: 1, duration: 0.06, immediateRender: false },
+			0.1,
+		);
 		// 这条 scrub 时间线会被 invalidate()（onRefreshInit / 窗口 resize 都会触发）。
 		// GSAP 的 to 补间在 invalidate 后会把「当前 DOM 值」重新记录为起点：
 		// 若 invalidate 发生在标题已淡出的深滚动状态，起点被记成 autoAlpha 0，
 		// 之后滚回顶部标题永远不可见。因此所有补间一律 fromTo 显式锚定起点。
 		timeline.fromTo(
 			title,
-			{ autoAlpha: 1, yPercent: 0, scale: 1 },
+			{ autoAlpha: 1, y: 0, yPercent: 0, scale: 1 },
 			{
-				yPercent: -20,
-				scale: 0.58,
+				y: -8,
+				yPercent: 0,
+				scale: 1,
 				transformOrigin: "0% 50%",
 				duration: 0.1,
 				ease: "power3.inOut",
 			},
 			0,
 		);
-		// 右下角 contact 的退场不再整体渐隐，改为字符随风散落，
+		// 左侧竖牌的退场使用字符随风散落，身份标题仅轻移与淡出。
 		// 由 prepareFlyText() 在字体就绪后将 scatter 时间线挂载到 0.04 位置。
 		timeline.fromTo(
 			tiles.map((tile) => tile.element),
@@ -651,25 +920,11 @@ export function mountHomeHero() {
 			0.72,
 		);
 
-		if (dialogueRoot) {
-			timeline.fromTo(
-				dialogueRoot,
-				{ autoAlpha: 0, y: 16, scale: 0.96 },
-				{
-					autoAlpha: 1,
-					y: 0,
-					scale: 1,
-					duration: DIALOGUE_REVEAL_DURATION,
-					ease: "power3.out",
-				},
-				DIALOGUE_REVEAL_TIME,
-			);
-		}
-
 		timeline.fromTo(
 			mosaic,
-			{ y: 0, scale: 1 },
+			{ x: 0, y: 0, scale: 1 },
 			{
+				x: () => getMosaicTransform().x,
 				y: () => getMosaicTransform().y,
 				scale: () => getMosaicTransform().scale,
 				duration: 0.2,
@@ -680,13 +935,23 @@ export function mountHomeHero() {
 		timeline.fromTo(
 			backdrop,
 			{ autoAlpha: 0 },
-			{ autoAlpha: 1, duration: 0.1, ease: "power2.inOut" },
+			{
+				autoAlpha: 1,
+				duration: 0.1,
+				ease: "power2.inOut",
+				immediateRender: false,
+			},
 			0.87,
 		);
 		timeline.fromTo(
 			mosaic,
 			{ autoAlpha: 1 },
-			{ autoAlpha: 0, duration: 0.07, ease: "power2.in" },
+			{
+				autoAlpha: 0,
+				duration: 0.07,
+				ease: "power2.in",
+				immediateRender: false,
+			},
 			0.92,
 		);
 
@@ -699,7 +964,7 @@ export function mountHomeHero() {
 					y: 0,
 					scale: 1,
 					duration: 0.14,
-					ease: "back.out(2.1)",
+					ease: HERO_OPENING.ease,
 				},
 				QUICK_ACTIONS_REVEAL_TIME + index * 0.03,
 			);
@@ -748,53 +1013,12 @@ export function mountHomeHero() {
 		requestScrollTriggerRefresh(ScrollTrigger);
 	};
 
-	// 初始可见碎片改为渐入，完成后进入常规 idle 轮换
+	// 首屏完整人物取代静止碎片轮换；碎片只在滚动过渡期间使用。
 	const playTilesIntro = () => {
-		const idleTiles = tiles.filter((tile) => tile.initiallyVisible);
-		if (!idleTiles.length) {
-			tilesIntroDone = true;
-			return;
-		}
-		tilesIntroTimeline = gsap.timeline({
-			onComplete: () => {
-				tilesIntroTimeline = null;
-				tilesIntroDone = true;
-				if (
-					(heroScrollTrigger?.progress ?? 0) <= 0.002 &&
-					!reducedMotionQuery.matches &&
-					!idleTimer
-				) {
-					startIdleRotation();
-				}
-			},
-		});
-		for (const tile of idleTiles) {
-			const transform = getTileInitialTransform(tile);
-			tilesIntroTimeline.fromTo(
-				tile.element,
-				{
-					y: transform.y + 24,
-					scaleX: transform.scaleX * 0.92,
-					scaleY: transform.scaleY * 0.92,
-					filter: `blur(${transform.blur + 5}px)`,
-					autoAlpha: 0,
-				},
-				{
-					y: transform.y,
-					scaleX: transform.scaleX,
-					scaleY: transform.scaleY,
-					filter: `blur(${transform.blur}px)`,
-					autoAlpha: 1,
-					duration: 0.85,
-					ease: "power2.out",
-					immediateRender: true,
-				},
-				0.06 + tile.order * 0.05,
-			);
-		}
+		tilesIntroDone = true;
 	};
 
-	// 右下角 contact：Scatter random 入场；下滑时字符风散退场
+	// 拆字只服务既有左侧竖牌，身份标题和博客名牌保持真实的单行文本。
 	const prepareFlyText = () => {
 		const titleHost = hero.querySelector<HTMLElement>(
 			".home-hero__title > span:first-child",
@@ -808,19 +1032,27 @@ export function mountHomeHero() {
 				: []
 		).filter((host): host is HTMLElement => host !== null);
 		const occupation = hero.querySelector<HTMLElement>(
-			".home-hero__occupation",
+			".home-hero__occupation > span",
 		);
-		const identityText = [titleHost, occupation].filter(
+		const nameBadge = hero.querySelector<HTMLElement>(".home-hero__name-badge");
+		const identityText = [occupation, titleHost, nameBadge].filter(
 			(element): element is HTMLElement => element !== null,
 		);
+		const identityEntryState = {
+			autoAlpha: 0,
+			y: 8,
+			yPercent: 0,
+			scaleX: 1,
+			scaleY: 1,
+			skewY: 0,
+			transformOrigin: "0% 100%",
+		};
 
 		// 字体就绪前先隐藏 contact，避免拆字前闪现原始整段文字。
 		contactHosts.forEach((host) => {
 			gsap.set(host, { autoAlpha: 0 });
 		});
-		identityText.forEach((element) => {
-			gsap.set(element, { autoAlpha: 0, y: 14 });
-		});
+		gsap.set(identityText, identityEntryState);
 
 		const mountContactScatter = () => {
 			if (!timeline || !flyHandles.length) return;
@@ -829,15 +1061,31 @@ export function mountHomeHero() {
 			for (const handle of flyHandles) {
 				const tl = handle.buildScatter(0.12);
 				if (tl) scatter.add(tl, 0);
+				const returnTimeline = handle.buildScatter(
+					DIALOGUE_REVEAL_DURATION,
+					"in",
+				);
+				if (returnTimeline)
+					scatter.add(
+						returnTimeline,
+						DIALOGUE_REVEAL_TIME - DIALOGUE_REVEAL_DURATION - 0.04,
+					);
 			}
 			contactScatterTimeline = scatter;
 			timeline.add(scatter, 0.04);
+			// paused 父时间线不会自动把新字符渲染到当前滚动位置。
+			timeline.render(timeline.time(), true, true);
 		};
 
 		const handleFlyLayoutChange = () => {
 			window.clearTimeout(flyLayoutTimer);
 			flyLayoutTimer = window.setTimeout(() => {
 				if (disposed) return;
+				stopContactReaction();
+				textIntroTimeline?.progress(1).kill();
+				textIntroTimeline = null;
+				// Range 返回视口坐标，先去掉祖先滚动缩放，测量后再由原时间线恢复。
+				if (title) gsap.set(title, { y: 0, yPercent: 0, scale: 1 });
 				for (const handle of flyHandles) handle.rebuild();
 				mountContactScatter();
 			}, 200);
@@ -845,6 +1093,20 @@ export function mountHomeHero() {
 
 		document.fonts.ready.then(() => {
 			if (disposed) return;
+			if (reducedMotionQuery.matches || hero.dataset.reducedMotion === "true") {
+				setReducedMotionState(hero);
+				syncInteraction();
+				return;
+			}
+			gsap.set(identityText, {
+				autoAlpha: 1,
+				y: 0,
+				yPercent: 0,
+				scaleX: 1,
+				scaleY: 1,
+				skewY: 0,
+			});
+			if (title) gsap.set(title, { y: 0, yPercent: 0, scale: 1 });
 			flyHandles = contactHosts.map((host) => createFlyText(host));
 			for (const handle of flyHandles) {
 				handle.prepare();
@@ -858,54 +1120,155 @@ export function mountHomeHero() {
 
 			const progress = heroScrollTrigger?.progress ?? 0;
 			if (progress <= 0.01) {
-				const intro = gsap.timeline();
+				gsap.set(identityText, identityEntryState);
+				const intro = gsap.timeline({
+					defaults: { ease: HERO_OPENING.ease },
+					onComplete: () => {
+						textIntroTimeline = null;
+						syncInteraction();
+					},
+				});
+				intro.to(
+					identityText,
+					{
+						autoAlpha: 1,
+						y: 0,
+						yPercent: 0,
+						scaleX: 1,
+						scaleY: 1,
+						skewY: 0,
+						duration: HERO_OPENING.titleDuration,
+						ease: "power2.out",
+						stagger: HERO_OPENING.occupationDelay - HERO_OPENING.titleDelay,
+					},
+					HERO_OPENING.titleDelay,
+				);
 				const contactEntrances = flyHandles
-					.map((handle) => handle.buildEntrance(0.8))
+					.map((handle) =>
+						handle.buildReveal(HERO_SIGNATURE_MOTION.revealDuration),
+					)
 					.filter((tl): tl is ReturnType<typeof gsap.timeline> => tl !== null);
 				contactEntrances.forEach((tl, index) => {
-					intro.add(tl, 0.22 + index * 0.05);
+					intro.add(tl, HERO_OPENING.tilesDelay + index * 0.08);
 				});
 				textIntroTimeline = intro;
 			} else {
 				for (const handle of flyHandles) handle.setNatural();
-			}
-
-			if (identityText.length) {
-				gsap.to(identityText, {
+				gsap.set(identityText, {
 					autoAlpha: 1,
 					y: 0,
-					duration: 0.7,
-					ease: "power2.out",
-					delay: 0.5,
+					yPercent: 0,
+					scaleX: 1,
+					scaleY: 1,
+					skewY: 0,
 				});
+				timeline?.render(timeline.time(), true, true);
 			}
+			syncOpeningMotion();
+			syncInteraction();
 		});
 	};
 
 	if (reducedMotionQuery.matches) {
-		setReducedMotionState(hero, dialogue);
+		interactionReady = true;
+		sticker.setSceneVisible(true);
+		setReducedMotionState(hero);
+		syncInteraction();
 	} else {
+		if (opening) {
+			openingTimeline = gsap.timeline();
+			openingTimeline.fromTo(
+				opening,
+				{ scaleY: 1 },
+				{
+					scaleY: 0,
+					duration: HERO_OPENING.duration,
+					ease: "power4.inOut",
+				},
+			);
+			openingTimeline.call(
+				() => {
+					interactionReady = true;
+					syncInteraction();
+				},
+				[],
+				HERO_OPENING.interactionDelay,
+			);
+		} else interactionReady = true;
 		buildTimeline();
 		playTilesIntro();
 		prepareFlyText();
 	}
+	document.addEventListener(
+		"visibilitychange",
+		() => {
+			syncRain();
+			syncOpeningMotion();
+			syncInteraction();
+			if (document.hidden) stopIdleRotation();
+			else if (tilesIntroDone && (heroScrollTrigger?.progress ?? 0) <= 0.002)
+				startIdleRotation();
+		},
+		{ signal: abortController.signal },
+	);
+	mobileQuery.addEventListener(
+		"change",
+		() => {
+			syncRain();
+			syncOpeningMotion();
+			syncInteraction();
+		},
+		{ signal: abortController.signal },
+	);
+	reducedMotionQuery.addEventListener(
+		"change",
+		() => {
+			if (!reducedMotionQuery.matches) return;
+			stopContactReaction();
+			completePendingIntros();
+			stopIdleRotation();
+			heroScrollTrigger?.kill();
+			heroScrollTrigger = null;
+			scrollDriver?.kill();
+			scrollDriver = null;
+			timeline?.kill();
+			timeline = null;
+			rainWanted = false;
+			syncRain();
+			setReducedMotionState(hero);
+			for (const handle of flyHandles) handle.setNatural();
+			syncInteraction();
+		},
+		{ signal: abortController.signal },
+	);
 	document
 		.querySelector(".home-page--motion-pending")
 		?.classList.remove("home-page--motion-pending");
 
 	if (resetAfterReload) {
-		requestAnimationFrame(() => {
+		reloadFrame = requestAnimationFrame(() => {
+			reloadFrame = 0;
+			if (disposed) return;
 			window.scrollTo(0, 0);
 			timeline?.progress(0);
 			scrollDriver?.progress(0);
 			updateSceneState(0);
 			requestScrollTriggerRefresh(ScrollTrigger);
-			history.scrollRestoration = "auto";
+			if (history.scrollRestoration === "manual") {
+				history.scrollRestoration = previousScrollRestoration;
+			}
 		});
 	}
 
 	return () => {
 		disposed = true;
+		if (reloadFrame) {
+			cancelAnimationFrame(reloadFrame);
+			reloadFrame = 0;
+			if (history.scrollRestoration === "manual") {
+				history.scrollRestoration = previousScrollRestoration;
+			}
+		}
 		cancelScrollTriggerRefresh();
 		stopIdleRotation();
 		window.clearTimeout(flyLayoutTimer);
@@ -913,13 +1276,17 @@ export function mountHomeHero() {
 		tilesIntroTimeline = null;
 		textIntroTimeline?.kill();
 		textIntroTimeline = null;
+		openingTimeline?.kill();
+		openingTimeline = null;
+		stopContactReaction();
 		for (const handle of flyHandles) handle.destroy();
 		flyHandles = [];
 		contactScatterTimeline = null;
 		heroVisibility.disconnect();
 		rain.destroy();
+		artwork.destroy();
 		dialogue.destroy();
-		destroySticker();
+		sticker.destroy();
 		abortController.abort();
 		heroScrollTrigger?.kill();
 		heroScrollTrigger = null;
@@ -929,5 +1296,6 @@ export function mountHomeHero() {
 		timeline = null;
 		delete hero.dataset.heroMounted;
 		delete hero.dataset.layerActive;
+		delete hero.dataset.signaturePaused;
 	};
 }

@@ -1,14 +1,19 @@
-import type { HeroDialogueConfig, HeroDialogueLine } from "@/types/config";
+import type { HeroDialogueLine, HeroDialogueTopic } from "@/types/config";
 
-type DialogueMode = "intro" | "topic" | "menu";
+const START_DEBOUNCE_MS = 200;
 
-type ResolvedDialogueConfig = Required<
-	Pick<HeroDialogueConfig, "intro" | "topics">
-> & {
+type ResolvedDialogueConfig = {
 	speakers: { host: string; visitor: string };
-	menuTitle: string;
 	typingSpeed: number;
 	autoDelay: number;
+	menuTitle: string;
+	intro: HeroDialogueLine[];
+	topics: HeroDialogueTopic[];
+};
+
+export type HomeHeroDialogueCallbacks = {
+	onReaction: (line: HeroDialogueLine) => void;
+	onReset: () => void;
 };
 
 export type HomeHeroDialogueController = {
@@ -16,172 +21,149 @@ export type HomeHeroDialogueController = {
 	destroy: () => void;
 };
 
-type DialogueElements = {
-	box: HTMLElement;
-	name: HTMLElement;
-	text: HTMLElement;
-	menu: HTMLUListElement;
-	body: HTMLElement;
-	footer: HTMLElement | null;
-	advance: HTMLButtonElement | null;
-	advanceLabel: HTMLElement | null;
-	autoButton: HTMLButtonElement | null;
-	restoreButton: HTMLButtonElement | null;
-};
+function isDialogueLine(value: unknown): value is HeroDialogueLine {
+	if (typeof value !== "object" || value === null || !("text" in value)) {
+		return false;
+	}
+	if (typeof value.text !== "string") return false;
+	if (
+		"speaker" in value &&
+		value.speaker !== undefined &&
+		value.speaker !== "host" &&
+		value.speaker !== "visitor"
+	) {
+		return false;
+	}
+	if (
+		"action" in value &&
+		value.action !== undefined &&
+		value.action !== "greet" &&
+		value.action !== "nod" &&
+		value.action !== "tilt"
+	) {
+		return false;
+	}
+	return (
+		!("expression" in value) ||
+		value.expression === undefined ||
+		value.expression === "idle" ||
+		value.expression === "blink" ||
+		value.expression === "smile" ||
+		value.expression === "greet"
+	);
+}
 
-type DialogueState = {
-	root: HTMLElement;
-	config: ResolvedDialogueConfig;
-	elements: DialogueElements;
-	mode: DialogueMode;
-	lines: HeroDialogueLine[];
-	lineIndex: number;
-	topicIndex: number;
-	typing: boolean;
-	auto: boolean;
-	started: boolean;
-	sceneVisible: boolean;
-	closed: boolean;
-	typeTimer: number | null;
-	autoTimer: number | null;
-	abortController: AbortController;
-};
+function isDialogueTopic(value: unknown): value is HeroDialogueTopic {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		"title" in value &&
+		typeof value.title === "string" &&
+		"lines" in value &&
+		Array.isArray(value.lines) &&
+		value.lines.length > 0 &&
+		value.lines.every(isDialogueLine)
+	);
+}
 
 function parseConfig(root: HTMLElement): ResolvedDialogueConfig | null {
 	try {
-		const raw = JSON.parse(
-			root.dataset.dialogue ?? "",
-		) as ResolvedDialogueConfig;
+		const raw: unknown = JSON.parse(root.dataset.dialogue ?? "");
 		if (
-			!raw.speakers ||
+			typeof raw !== "object" ||
+			raw === null ||
+			!("speakers" in raw) ||
+			!("intro" in raw) ||
+			!("typingSpeed" in raw) ||
+			!("autoDelay" in raw) ||
+			!("menuTitle" in raw) ||
+			!("topics" in raw) ||
+			typeof raw.speakers !== "object" ||
+			raw.speakers === null ||
+			!("host" in raw.speakers) ||
+			!("visitor" in raw.speakers) ||
+			typeof raw.speakers.host !== "string" ||
+			typeof raw.speakers.visitor !== "string" ||
 			!Array.isArray(raw.intro) ||
-			!Array.isArray(raw.topics)
+			!raw.intro.every(isDialogueLine) ||
+			!Array.isArray(raw.topics) ||
+			!raw.topics.every(isDialogueTopic) ||
+			typeof raw.menuTitle !== "string" ||
+			typeof raw.autoDelay !== "number" ||
+			!Number.isFinite(raw.autoDelay) ||
+			raw.autoDelay < 0 ||
+			typeof raw.typingSpeed !== "number" ||
+			!Number.isFinite(raw.typingSpeed) ||
+			raw.typingSpeed < 0
 		) {
 			return null;
 		}
-		return raw;
+		return {
+			speakers: {
+				host: raw.speakers.host,
+				visitor: raw.speakers.visitor,
+			},
+			intro: raw.intro,
+			typingSpeed: raw.typingSpeed,
+			autoDelay: raw.autoDelay,
+			menuTitle: raw.menuTitle,
+			topics: raw.topics,
+		};
 	} catch {
+		// 静态配置无法解析时保持服务端提示与禁用按钮，不启动半完成的互动。
 		return null;
 	}
 }
 
-function clearTypeTimer(state: DialogueState) {
-	if (state.typeTimer === null) return;
-	window.clearTimeout(state.typeTimer);
-	state.typeTimer = null;
-}
-
-function clearAutoTimer(state: DialogueState) {
-	if (state.autoTimer === null) return;
-	window.clearTimeout(state.autoTimer);
-	state.autoTimer = null;
-}
-
-function clearTimers(state: DialogueState) {
-	clearTypeTimer(state);
-	clearAutoTimer(state);
-}
-
-function setAdvanceReady(state: DialogueState, ready: boolean) {
-	const advance = state.elements.advance;
-	if (!advance) return;
-	advance.dataset.ready = String(ready);
-	advance.setAttribute("aria-hidden", String(!ready));
-	advance.tabIndex = ready ? 0 : -1;
-}
-
-function setSpeaker(state: DialogueState, speaker?: "host" | "visitor") {
-	const resolvedSpeaker = speaker === "visitor" ? "visitor" : "host";
-	state.elements.name.textContent = state.config.speakers[resolvedSpeaker];
-	state.elements.box.dataset.speaker = resolvedSpeaker;
-}
-
-function updateAdvanceLabel(state: DialogueState) {
-	const isLastLine = state.lineIndex >= state.lines.length - 1;
-	if (state.elements.advanceLabel) {
-		state.elements.advanceLabel.textContent = isLastLine
-			? "选择话题"
-			: "下一句";
-	}
-	if (state.elements.footer) {
-		state.elements.footer.dataset.end = String(isLastLine);
-	}
-}
-
-function scheduleAutoAdvance(state: DialogueState, advance: () => void) {
-	clearAutoTimer(state);
-	if (
-		!state.auto ||
-		!state.sceneVisible ||
-		state.closed ||
-		state.mode === "menu"
-	) {
-		return;
-	}
-	state.autoTimer = window.setTimeout(advance, state.config.autoDelay);
-}
-
-function syncDialogueAccessibility(state: DialogueState) {
-	const hidden = state.closed || !state.sceneVisible;
-	const activeElement = document.activeElement;
-	if (
-		activeElement instanceof HTMLElement &&
-		state.root.contains(activeElement)
-	) {
-		const restore = state.elements.restoreButton;
-		if (state.closed && state.sceneVisible && restore) {
-			restore.focus({ preventScroll: true });
-		} else {
-			activeElement.blur();
-		}
-	}
-	state.root.toggleAttribute("inert", hidden);
-	state.root.setAttribute("aria-hidden", String(hidden));
-}
-
-function syncRestoreButton(state: DialogueState) {
-	const restore = state.elements.restoreButton;
-	if (!restore) return;
-	const available = state.closed && state.sceneVisible;
-	if (!available && document.activeElement === restore) {
-		if (state.sceneVisible && !state.closed && state.elements.advance) {
-			state.elements.advance.focus({ preventScroll: true });
-		} else {
-			restore.blur();
-		}
-	}
-	restore.classList.toggle("is-dialogue-closed", available);
-	restore.setAttribute("aria-hidden", String(!available));
-	restore.tabIndex = available ? 0 : -1;
-}
-
-function setClosedState(state: DialogueState, closed: boolean) {
-	state.closed = closed;
-	state.root.dataset.hidden = String(closed);
-	if (closed) {
-		syncRestoreButton(state);
-		syncDialogueAccessibility(state);
-	} else {
-		syncDialogueAccessibility(state);
-		syncRestoreButton(state);
-	}
-	if (closed) clearAutoTimer(state);
-}
-
 export function initHomeHeroDialogue(
 	hero: HTMLElement,
+	callbacks: HomeHeroDialogueCallbacks,
 ): HomeHeroDialogueController {
 	const root = hero.querySelector<HTMLElement>("[data-hero-dialogue]");
 	const config = root ? parseConfig(root) : null;
-	const box = root?.querySelector<HTMLElement>("[data-dialogue-box]") ?? null;
-	const name = root?.querySelector<HTMLElement>("[data-dialogue-name]") ?? null;
-	const text = root?.querySelector<HTMLElement>("[data-dialogue-text]") ?? null;
-	const menu =
-		root?.querySelector<HTMLUListElement>("[data-dialogue-menu]") ?? null;
-	const body =
-		root?.querySelector<HTMLElement>("[data-dialogue-click]") ?? null;
+	const box = root?.querySelector<HTMLElement>("[data-dialogue-box]");
+	const name = root?.querySelector<HTMLElement>("[data-dialogue-name]");
+	const text = root?.querySelector<HTMLElement>("[data-dialogue-text]");
+	const announcement = root?.querySelector<HTMLElement>(
+		"[data-dialogue-announcement]",
+	);
+	const body = root?.querySelector<HTMLButtonElement>("[data-dialogue-click]");
+	const menu = root?.querySelector<HTMLUListElement>("[data-dialogue-menu]");
+	const autoButton = root?.querySelector<HTMLButtonElement>(
+		'[data-dialogue-action="auto"]',
+	);
+	const backButton = root?.querySelector<HTMLButtonElement>(
+		'[data-dialogue-action="back"]',
+	);
+	const resetButton = root?.querySelector<HTMLButtonElement>(
+		'[data-dialogue-action="reset"]',
+	);
+	const advanceButton = root?.querySelector<HTMLButtonElement>(
+		"[data-dialogue-advance]",
+	);
+	const hideButton = root?.querySelector<HTMLButtonElement>(
+		'[data-dialogue-action="hide"]',
+	);
+	const restoreButton = hero.querySelector<HTMLButtonElement>(
+		"[data-dialogue-restore]",
+	);
 
-	if (!root || !config || !box || !name || !text || !menu || !body) {
+	if (
+		!root ||
+		!config ||
+		(config.intro.length === 0 && config.topics.length === 0) ||
+		!box ||
+		!name ||
+		!text ||
+		!announcement ||
+		!body ||
+		!menu ||
+		!autoButton ||
+		!backButton ||
+		!resetButton ||
+		!advanceButton ||
+		!hideButton
+	) {
 		return {
 			setSceneVisible: () => undefined,
 			destroy: () => undefined,
@@ -189,254 +171,344 @@ export function initHomeHeroDialogue(
 	}
 
 	const abortController = new AbortController();
-	const state: DialogueState = {
-		root,
-		config,
-		elements: {
-			box,
-			name,
-			text,
-			menu,
-			body,
-			footer: root.querySelector<HTMLElement>(".home-hero__dialogue-footer"),
-			advance: root.querySelector<HTMLButtonElement>("[data-dialogue-advance]"),
-			advanceLabel: root.querySelector<HTMLElement>(
-				"[data-dialogue-advance-label]",
-			),
-			autoButton: root.querySelector<HTMLButtonElement>(
-				'[data-dialogue-action="auto"]',
-			),
-			restoreButton: hero.querySelector<HTMLButtonElement>(
-				"[data-hero-dialogue-restore]",
-			),
-		},
-		mode: "intro",
-		lines: config.intro,
-		lineIndex: 0,
-		topicIndex: 0,
-		typing: false,
-		auto: false,
-		started: false,
-		sceneVisible: false,
-		closed: false,
-		typeTimer: null,
-		autoTimer: null,
-		abortController,
+	const motionPreference = window.matchMedia(
+		"(prefers-reduced-motion: reduce)",
+	);
+	let sceneVisible = false;
+	let hasStarted = false;
+	let mode: "intro" | "topic" | "menu" = "intro";
+	let lines = config.intro;
+	let lineIndex = -1;
+	let lastStartTime = Number.NEGATIVE_INFINITY;
+	let typeTimer: number | null = null;
+	let autoTimer: number | null = null;
+	let isAuto = false;
+	let isTyping = false;
+	let isClosed = false;
+
+	const clearTypeTimer = (): void => {
+		if (typeTimer === null) return;
+		window.clearTimeout(typeTimer);
+		typeTimer = null;
 	};
 
-	const showMenu = () => {
-		clearTimers(state);
-		setAdvanceReady(state, false);
-		state.mode = "menu";
-		state.typing = false;
-		state.elements.box.dataset.typing = "false";
-		setSpeaker(state, "host");
-		state.elements.text.textContent = state.config.menuTitle;
-		state.elements.text.hidden = false;
-		state.elements.menu.replaceChildren();
+	const clearAutoTimer = (): void => {
+		if (autoTimer === null) return;
+		window.clearTimeout(autoTimer);
+		autoTimer = null;
+	};
 
-		state.config.topics.forEach((topic, topicIndex) => {
-			const item = document.createElement("li");
-			const button = document.createElement("button");
-			const particles = document.createElement("span");
-			const label = document.createElement("span");
-			button.type = "button";
-			button.className = "home-hero__dialogue-menu-item";
-			particles.className = "home-hero__dialogue-menu-particles";
-			particles.setAttribute("aria-hidden", "true");
-			for (let particleIndex = 0; particleIndex < 10; particleIndex += 1) {
-				const particle = document.createElement("span");
-				particle.className = "home-hero__dialogue-menu-particle";
-				particles.appendChild(particle);
-			}
-			label.className = "home-hero__dialogue-menu-label";
-			label.textContent = topic.title;
-			button.appendChild(particles);
-			button.appendChild(label);
-			button.addEventListener("click", (event) => {
-				event.stopPropagation();
-				state.mode = "topic";
-				state.topicIndex = topicIndex;
-				state.lines = topic.lines;
-				state.lineIndex = 0;
-				state.elements.menu.hidden = true;
-				playLine(0);
+	const syncAvailability = (): void => {
+		const available = sceneVisible && !document.hidden && !isClosed;
+		root.toggleAttribute("inert", !available);
+		root.setAttribute("aria-hidden", String(!available));
+		body.disabled = !available || mode === "menu";
+		autoButton.disabled = !available;
+		resetButton.disabled = !available;
+		hideButton.disabled = !available;
+		if (restoreButton) {
+			restoreButton.disabled = !sceneVisible || document.hidden;
+			restoreButton.setAttribute("aria-expanded", String(available));
+			restoreButton.setAttribute("aria-label", root.dataset.restoreLabel ?? "");
+		}
+		backButton.disabled =
+			!available || mode === "menu" || (mode === "intro" && lineIndex <= 0);
+		const ready = available && !isTyping && mode !== "menu";
+		advanceButton.disabled = !ready;
+		advanceButton.dataset.ready = String(ready);
+		const label =
+			lineIndex === lines.length - 1
+				? (root.dataset.topicLabel ?? "")
+				: (root.dataset.nextLabel ?? "");
+		body.setAttribute("aria-label", label);
+		advanceButton.setAttribute("aria-label", label);
+		advanceButton.title = label;
+	};
+
+	const scheduleAutoAdvance = (): void => {
+		clearAutoTimer();
+		if (
+			!isAuto ||
+			!sceneVisible ||
+			document.hidden ||
+			isClosed ||
+			mode === "menu"
+		)
+			return;
+		autoTimer = window.setTimeout(() => advance(), config.autoDelay);
+	};
+
+	const completeLine = (): void => {
+		clearTypeTimer();
+		isTyping = false;
+		box.dataset.typing = "false";
+		const line = lines[lineIndex];
+		syncAvailability();
+		if (!line) return;
+		text.textContent = line.text;
+		// 可见文字逐字更新；读屏只在完成时收到整句，避免逐字播报。
+		announcement.textContent = `${name.textContent}: ${line.text}`;
+		scheduleAutoAdvance();
+	};
+
+	const setSpeaker = (line: HeroDialogueLine): void => {
+		const speaker = line.speaker === "visitor" ? "visitor" : "host";
+		name.textContent = config.speakers[speaker];
+		box.dataset.speaker = speaker;
+	};
+
+	const showMenu = (): void => {
+		clearTypeTimer();
+		clearAutoTimer();
+		isTyping = false;
+		mode = "menu";
+		root.dataset.dialogueMode = mode;
+		box.dataset.typing = "false";
+		setSpeaker({ text: config.menuTitle });
+		text.textContent = config.menuTitle;
+		announcement.textContent = config.menuTitle;
+		menu.hidden = isClosed || config.topics.length === 0;
+		const shouldMoveFocus =
+			document.activeElement === body ||
+			document.activeElement === advanceButton;
+		syncAvailability();
+		if (shouldMoveFocus)
+			menu.querySelector<HTMLButtonElement>("button")?.focus({
+				preventScroll: true,
 			});
-			item.appendChild(button);
-			state.elements.menu.appendChild(item);
-		});
-
-		state.elements.menu.hidden = state.config.topics.length === 0;
-		if (state.elements.footer) state.elements.footer.dataset.end = "false";
-		if (state.elements.advanceLabel) {
-			state.elements.advanceLabel.textContent = "下一句";
-		}
 	};
 
-	const advance = () => {
-		if (!state.sceneVisible || state.closed || state.mode === "menu") return;
-		if (state.typing) {
-			clearTypeTimer(state);
-			state.elements.text.textContent =
-				state.lines[state.lineIndex]?.text ?? "";
-			state.typing = false;
-			state.elements.box.dataset.typing = "false";
-			setAdvanceReady(state, true);
-			updateAdvanceLabel(state);
-			scheduleAutoAdvance(state, advance);
-			return;
-		}
-		if (state.lineIndex < state.lines.length - 1) {
-			playLine(state.lineIndex + 1);
-			return;
-		}
-		showMenu();
-	};
-
-	const playLine = (lineIndex: number) => {
-		const line = state.lines[lineIndex];
+	const playLine = (nextIndex: number): void => {
+		const line = lines[nextIndex];
 		if (!line) {
 			showMenu();
 			return;
 		}
+		clearTypeTimer();
+		clearAutoTimer();
+		lineIndex = nextIndex;
+		isTyping = true;
+		menu.hidden = true;
+		root.dataset.dialogueMode = mode;
+		setSpeaker(line);
+		announcement.textContent = "";
+		text.textContent = "";
+		box.dataset.typing = "true";
+		syncAvailability();
+		callbacks.onReaction(line);
 
-		clearTimers(state);
-		state.lineIndex = lineIndex;
-		state.typing = true;
-		state.elements.box.dataset.typing = "true";
-		setAdvanceReady(state, false);
-		state.elements.menu.hidden = true;
-		state.elements.text.hidden = false;
-		state.elements.text.textContent = "";
-		setSpeaker(state, line.speaker);
+		if (motionPreference.matches || config.typingSpeed === 0) {
+			completeLine();
+			return;
+		}
 
 		const characters = Array.from(line.text);
 		let characterIndex = 0;
-		const typeNextCharacter = () => {
-			if (!state.sceneVisible || state.closed) {
-				state.typeTimer = null;
+		const typeNextCharacter = (): void => {
+			if (!sceneVisible || document.hidden || isClosed) {
+				completeLine();
 				return;
 			}
-			if (characterIndex >= characters.length) {
-				state.typing = false;
-				state.typeTimer = null;
-				state.elements.box.dataset.typing = "false";
-				setAdvanceReady(state, true);
-				updateAdvanceLabel(state);
-				scheduleAutoAdvance(state, advance);
-				return;
-			}
-			state.elements.text.textContent += characters[characterIndex];
+			text.textContent += characters[characterIndex] ?? "";
 			characterIndex += 1;
-			state.typeTimer = window.setTimeout(
-				typeNextCharacter,
-				state.config.typingSpeed,
-			);
+			if (characterIndex >= characters.length) {
+				completeLine();
+				return;
+			}
+			typeTimer = window.setTimeout(typeNextCharacter, config.typingSpeed);
 		};
 		typeNextCharacter();
 	};
 
-	const start = () => {
-		if (state.started) return;
-		state.started = true;
-		if (state.config.intro.length === 0) {
-			showMenu();
+	const advance = (): void => {
+		if (!sceneVisible || document.hidden || isClosed || mode === "menu") return;
+		if (isTyping) {
+			completeLine();
 			return;
 		}
-		state.mode = "intro";
-		state.lines = state.config.intro;
+		if (lineIndex < lines.length - 1) playLine(lineIndex + 1);
+		else showMenu();
+	};
+
+	const advanceByClick = (): void => {
+		const now = performance.now();
+		if (now - lastStartTime < START_DEBOUNCE_MS) return;
+		lastStartTime = now;
+		advance();
+	};
+
+	const reset = (): void => {
+		if (!sceneVisible || document.hidden || isClosed) return;
+		clearTypeTimer();
+		clearAutoTimer();
+		isAuto = false;
+		autoButton.setAttribute("aria-pressed", "false");
+		mode = "intro";
+		lines = config.intro;
+		lastStartTime = Number.NEGATIVE_INFINITY;
+		callbacks.onReset();
 		playLine(0);
 	};
 
-	const back = () => {
-		if (state.mode === "menu") return;
-		if (state.lineIndex > 0) {
-			playLine(state.lineIndex - 1);
-			return;
-		}
-		if (state.mode === "topic") showMenu();
+	const back = (): void => {
+		if (!sceneVisible || document.hidden || isClosed || mode === "menu") return;
+		if (lineIndex > 0) playLine(lineIndex - 1);
+		else if (mode === "topic") showMenu();
 	};
 
-	const toggleAuto = () => {
-		state.auto = !state.auto;
-		state.elements.autoButton?.setAttribute("aria-pressed", String(state.auto));
-		state.elements.box.dataset.auto = String(state.auto);
-		if (state.auto && !state.typing) {
-			scheduleAutoAdvance(state, advance);
-		} else if (!state.auto) {
-			clearAutoTimer(state);
-		}
+	const close = (): void => {
+		if (!sceneVisible || document.hidden || isClosed) return;
+		isClosed = true;
+		clearAutoTimer();
+		// 收起时补全正在输出的句子，恢复后不丢字，也不积压旧打字任务。
+		if (isTyping) completeLine();
+		else clearTypeTimer();
+		root.dataset.hidden = "true";
+		menu.hidden = true;
+		restoreButton?.focus({ preventScroll: true });
+		syncAvailability();
 	};
 
-	body.addEventListener(
+	const restore = (): void => {
+		if (!sceneVisible || document.hidden || !isClosed) return;
+		isClosed = false;
+		root.dataset.hidden = "false";
+		menu.hidden = mode !== "menu" || config.topics.length === 0;
+		syncAvailability();
+		if (mode === "menu")
+			menu
+				.querySelector<HTMLButtonElement>("button")
+				?.focus({ preventScroll: true });
+		else body.focus({ preventScroll: true });
+		scheduleAutoAdvance();
+	};
+
+	body.addEventListener("click", advanceByClick, {
+		signal: abortController.signal,
+	});
+	advanceButton.addEventListener("click", advanceByClick, {
+		signal: abortController.signal,
+	});
+	backButton.addEventListener("click", back, {
+		signal: abortController.signal,
+	});
+	autoButton.addEventListener(
 		"click",
+		() => {
+			isAuto = !isAuto;
+			autoButton.setAttribute("aria-pressed", String(isAuto));
+			if (isAuto && !isTyping) scheduleAutoAdvance();
+			else if (!isAuto) clearAutoTimer();
+		},
+		{
+			signal: abortController.signal,
+		},
+	);
+	resetButton.addEventListener("click", reset, {
+		signal: abortController.signal,
+	});
+	hideButton.addEventListener("click", close, {
+		signal: abortController.signal,
+	});
+	restoreButton?.addEventListener("click", restore, {
+		signal: abortController.signal,
+	});
+	root.addEventListener(
+		"keydown",
 		(event) => {
-			if (!(event.target as Element).closest("button")) advance();
+			if (event.key !== "Escape") return;
+			event.preventDefault();
+			close();
 		},
 		{ signal: abortController.signal },
 	);
-	state.elements.advance?.addEventListener("click", advance, {
-		signal: abortController.signal,
-	});
-	root
-		.querySelector<HTMLButtonElement>('[data-dialogue-action="back"]')
-		?.addEventListener("click", back, { signal: abortController.signal });
-	state.elements.autoButton?.addEventListener("click", toggleAuto, {
-		signal: abortController.signal,
-	});
-	root
-		.querySelector<HTMLButtonElement>('[data-dialogue-action="hide"]')
-		?.addEventListener("click", () => setClosedState(state, true), {
-			signal: abortController.signal,
-		});
-	state.elements.restoreButton?.addEventListener(
+	menu.addEventListener(
 		"click",
-		() => setClosedState(state, false),
+		(event) => {
+			if (
+				!sceneVisible ||
+				document.hidden ||
+				isClosed ||
+				!(event.target instanceof Element)
+			)
+				return;
+			const button = event.target.closest<HTMLButtonElement>(
+				"[data-dialogue-topic]",
+			);
+			if (!button) return;
+			const topic =
+				config.topics[Number.parseInt(button.dataset.dialogueTopic ?? "", 10)];
+			if (!topic) return;
+			mode = "topic";
+			lines = topic.lines;
+			playLine(0);
+			body.focus({ preventScroll: true });
+		},
 		{ signal: abortController.signal },
 	);
 	document.addEventListener(
-		"keydown",
-		(event) => {
-			if (event.key === "Escape" && state.sceneVisible && !state.closed) {
-				setClosedState(state, true);
-			}
+		"visibilitychange",
+		() => {
+			if (document.hidden) {
+				clearAutoTimer();
+				if (isTyping) completeLine();
+			} else if (!isTyping) scheduleAutoAdvance();
+			syncAvailability();
+		},
+		{ signal: abortController.signal },
+	);
+	motionPreference.addEventListener(
+		"change",
+		() => {
+			if (motionPreference.matches && isTyping) completeLine();
 		},
 		{ signal: abortController.signal },
 	);
 
-	setSpeaker(state, "host");
-	setAdvanceReady(state, false);
-	setClosedState(state, false);
+	root.dataset.dialogueReady = "true";
+	box.dataset.typing = "false";
+	syncAvailability();
 
 	return {
-		setSceneVisible(visible) {
-			if (state.sceneVisible === visible) return;
-			state.sceneVisible = visible;
-			state.root.dataset.sceneVisible = String(visible);
-			if (visible && !state.closed) {
-				syncDialogueAccessibility(state);
-				syncRestoreButton(state);
-			} else {
-				syncRestoreButton(state);
-				syncDialogueAccessibility(state);
-			}
-			if (visible) {
-				start();
-				if (state.started && state.typing && state.typeTimer === null) {
-					state.elements.text.textContent =
-						state.lines[state.lineIndex]?.text ?? "";
-					state.typing = false;
-					state.elements.box.dataset.typing = "false";
-					setAdvanceReady(state, true);
-					updateAdvanceLabel(state);
+		setSceneVisible(visible): void {
+			if (sceneVisible === visible) return;
+			sceneVisible = visible;
+			root.dataset.sceneVisible = String(visible);
+			if (!visible) {
+				clearAutoTimer();
+				if (isTyping) completeLine();
+				const activeElement = document.activeElement;
+				if (
+					activeElement instanceof HTMLElement &&
+					root.contains(activeElement)
+				) {
+					activeElement.blur();
 				}
-				return;
 			}
-			clearTimers(state);
+			syncAvailability();
+			if (visible && !isClosed && !hasStarted) {
+				hasStarted = true;
+				playLine(0);
+			} else if (visible && !isClosed && !isTyping) scheduleAutoAdvance();
 		},
-		destroy() {
-			clearTimers(state);
+		destroy(): void {
+			clearTypeTimer();
+			clearAutoTimer();
 			abortController.abort();
+			box.dataset.typing = "false";
+			body.disabled = true;
+			autoButton.disabled = true;
+			backButton.disabled = true;
+			advanceButton.disabled = true;
+			resetButton.disabled = true;
+			hideButton.disabled = true;
+			if (restoreButton) {
+				restoreButton.disabled = true;
+				restoreButton.setAttribute("aria-expanded", "false");
+			}
+			root.setAttribute("inert", "");
+			root.setAttribute("aria-hidden", "true");
+			delete root.dataset.dialogueReady;
 		},
 	};
 }

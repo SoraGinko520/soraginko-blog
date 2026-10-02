@@ -52,7 +52,11 @@ export { coverImageConfig } from "./coverImageConfig"; // 封面图配置
 export { expressiveCodeConfig } from "./expressiveCodeConfig"; // 代码高亮配置
 export { fontConfig } from "./fontConfig"; // 字体配置
 export { footerConfig } from "./footerConfig"; // 页脚配置
-export { friendsPageConfig, getEnabledFriends } from "./friendsConfig"; // 友链配置
+export {
+	friendsConfig,
+	friendsPageConfig,
+	getEnabledFriends,
+} from "./friendsConfig"; // 友链与朋友圈的单一数据源
 export { galleryConfig } from "./galleryConfig"; // 相册配置
 export { guestbookConfig } from "./guestbookConfig"; // 留言板配置
 export { homeConfig } from "./homeConfig"; // 首页与用户资料配置
@@ -64,6 +68,7 @@ export { musicPlayerConfig } from "./musicConfig"; // 音乐播放器配置
 export { navBarConfig } from "./navBarConfig"; // 导航栏配置
 export { live2dModelConfig, spineModelConfig } from "./pioConfig"; // 看板娘配置
 export { plantumlConfig } from "./plantumlConfig"; // PlantUML 图表配置
+export { projectsConfig } from "./projectsConfig"; // GitHub 项目精选与覆盖配置
 // 布局配置
 export { siteConfig } from "./siteConfig"; // 站点基础配置
 export { sponsorConfig } from "./sponsorConfig"; // 赞助配置

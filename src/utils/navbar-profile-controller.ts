@@ -22,6 +22,7 @@ import {
 	getHolidayOccurrences,
 	type Milestone,
 	milestoneFromOccurrences,
+	milestoneFromSolarDate,
 } from "@/utils/calendar-milestones";
 import { onNavigation } from "@/utils/swup-lifecycle";
 
@@ -31,6 +32,7 @@ interface ProfileConfig {
 	locale: string;
 	anniversary: {
 		name: string;
+		solarDate: { month: number; day: number } | null;
 		/** 构建期展开的前后三年公历日期（YYYY-MM-DD） */
 		occurrences: string[];
 	};
@@ -232,7 +234,14 @@ async function fetchData(): Promise<ProfileData> {
 }
 
 function ensureData(): void {
-	if (!config || !refs || dataPromise) return;
+	if (
+		!config ||
+		!refs ||
+		dataPromise ||
+		(data && !data.holidaysFailed && !data.postsFailed)
+	) {
+		return;
+	}
 	refs.card.setAttribute("aria-busy", "true");
 	dataPromise = fetchData()
 		.then((result) => {
@@ -242,6 +251,8 @@ function ensureData(): void {
 			renderEvents();
 		})
 		.finally(() => {
+			// 成功结果继续缓存；失败时只在下次展开面板重试，不自动轮询。
+			dataPromise = null;
 			refs?.card.setAttribute("aria-busy", "false");
 		});
 }
@@ -481,33 +492,43 @@ function formatDateKey(dateKey: string): string {
 }
 
 function renderEvents(): void {
-	if (!refs || !config || !data) return;
+	if (!refs || !config) return;
 	const currentConfig = config;
 	const todayKey = formatYmd(new Date());
 
-	renderEventCard(
-		refs.events.holiday,
-		data.holidaysFailed
-			? null
-			: milestoneFromOccurrences(
-					getHolidayOccurrences(data.holidays),
-					todayKey,
-				),
-		data.holidaysFailed
-			? currentConfig.labels.unavailable
-			: currentConfig.labels.noHoliday,
-	);
+	if (data) {
+		renderEventCard(
+			refs.events.holiday,
+			data.holidaysFailed
+				? null
+				: milestoneFromOccurrences(
+						getHolidayOccurrences(data.holidays),
+						todayKey,
+					),
+			data.holidaysFailed
+				? currentConfig.labels.unavailable
+				: currentConfig.labels.noHoliday,
+		);
+	}
 
-	// 建站日事件序列在构建期内联，无网络依赖
+	// 建站日不依赖节日请求；公历日期在访问时展开，农历使用构建期序列。
+	const solarDate = currentConfig.anniversary.solarDate;
 	renderEventCard(
 		refs.events.anniversary,
-		milestoneFromOccurrences(
-			currentConfig.anniversary.occurrences.map((date) => ({
-				title: currentConfig.anniversary.name,
-				date,
-			})),
-			todayKey,
-		),
+		solarDate
+			? milestoneFromSolarDate(
+					solarDate.month,
+					solarDate.day,
+					currentConfig.anniversary.name,
+					todayKey,
+				)
+			: milestoneFromOccurrences(
+					currentConfig.anniversary.occurrences.map((date) => ({
+						title: currentConfig.anniversary.name,
+						date,
+					})),
+					todayKey,
+				),
 		currentConfig.labels.unavailable,
 	);
 
@@ -639,6 +660,8 @@ function openPanel(): void {
 	// 无导航栏的页面桌面端无从锚定，放弃打开（移动端是全屏卡片，不受影响）
 	if (!mobile && !refs.leftSeg) return;
 	ensureData();
+	// 常驻卡片跨天仍会再次打开：重算事件，不重放首次请求时缓存的天数。
+	renderEvents();
 	openedAsMobile = mobile;
 	if (mobile) {
 		// 清掉桌面端可能写入的内联锚点，避免覆盖移动端 inset:0

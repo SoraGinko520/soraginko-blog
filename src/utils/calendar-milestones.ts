@@ -26,6 +26,9 @@ function shiftYear(dateKey: string, offset: number): string {
 	return `${shiftedYear}-${String(month).padStart(2, "0")}-${String(shiftedDay).padStart(2, "0")}`;
 }
 
+/** 前后八年覆盖闰日周年，以及跨世纪不闰年的相邻周期。 */
+const SOLAR_ANNIVERSARY_YEAR_RANGE = 8;
+
 export interface YearlyEventInput {
 	/** 日期 key，格式 YYYY-MM-DD */
 	date: string;
@@ -115,4 +118,35 @@ export function milestoneFromOccurrences(
 		progress: Math.round((elapsedDays / totalDays) * 100),
 		remainingDays: Math.max(0, daysBetween(todayKey, next.date)),
 	};
+}
+
+/** 公历周年按访问年份展开，避免静态页面的三年日期序列用尽后误报不可用。 */
+export function milestoneFromSolarDate(
+	month: number,
+	day: number,
+	title: string,
+	todayKey: string,
+): Milestone | null {
+	const year = Number(todayKey.split("-")[0]);
+	const occurrences: MilestoneOccurrence[] = [];
+	for (
+		let offset = -SOLAR_ANNIVERSARY_YEAR_RANGE;
+		offset <= SOLAR_ANNIVERSARY_YEAR_RANGE;
+		offset++
+	) {
+		const eventYear = year + offset;
+		const date = new Date(Date.UTC(eventYear, month - 1, day));
+		if (
+			date.getUTCFullYear() !== eventYear ||
+			date.getUTCMonth() + 1 !== month ||
+			date.getUTCDate() !== day
+		) {
+			continue;
+		}
+		occurrences.push({
+			title,
+			date: `${eventYear}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`,
+		});
+	}
+	return milestoneFromOccurrences(occurrences, todayKey);
 }

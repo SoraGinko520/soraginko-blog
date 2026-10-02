@@ -2,19 +2,21 @@
 import { onDestroy, onMount } from "svelte";
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/controls/OrbitControls.js";
-import { musicPlayerConfig } from "@/config/musicConfig";
+import { musicPlayerConfig } from "@/config";
 import { AudioAnalyzer, type AudioData } from "./AudioAnalyzer";
 
 interface Props {
 	audioAnalyzer: AudioAnalyzer;
 	backgroundColor?: string;
 	onSceneReady?: (() => void) | undefined;
+	onSceneError?: (() => void) | undefined;
 }
 
 let {
 	audioAnalyzer,
 	backgroundColor = musicPlayerConfig.visualizer?.background?.dark ?? "#0a0a15",
 	onSceneReady = undefined,
+	onSceneError = undefined,
 }: Props = $props();
 
 let container: HTMLDivElement;
@@ -26,9 +28,15 @@ let terrainMesh: THREE.InstancedMesh;
 let meteorMesh: THREE.InstancedMesh;
 let particleMesh: THREE.InstancedMesh;
 let terrainMaterial: THREE.ShaderMaterial;
-let animationId: number;
+let animationId: number | null = null;
 let clock: THREE.Clock;
 let onResize: (() => void) | undefined;
+let isSceneReady = false;
+let isSceneVisible = false;
+let isReducedMotion = false;
+let visibilityObserver: IntersectionObserver | undefined;
+let motionQuery: MediaQueryList | undefined;
+let eventController: AbortController | undefined;
 const backgroundTargetColor = new THREE.Color();
 
 $effect(() => {
@@ -607,7 +615,7 @@ function init() {
 	}
 
 	function onPointerUp(e: PointerEvent) {
-		if (e.button !== 0) return;
+		if (e.button !== 0 || isReducedMotion) return;
 		const rect = renderer.domElement.getBoundingClientRect();
 		mouse.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
 		mouse.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
@@ -621,8 +629,22 @@ function init() {
 		}
 	}
 
-	renderer.domElement.addEventListener("pointerdown", onPointerDown);
-	renderer.domElement.addEventListener("pointerup", onPointerUp);
+	renderer.domElement.addEventListener("pointerdown", onPointerDown, {
+		signal: eventController?.signal,
+	});
+	renderer.domElement.addEventListener("pointerup", onPointerUp, {
+		signal: eventController?.signal,
+	});
+	renderer.domElement.addEventListener(
+		"webglcontextlost",
+		() => {
+			isSceneReady = false;
+			stopAnimation();
+			onSceneError?.();
+		},
+		{ signal: eventController?.signal },
+	);
+	controls.addEventListener("change", renderStill);
 
 	onResize = () => {
 		if (!container || !camera || !renderer) return;
@@ -631,11 +653,48 @@ function init() {
 		camera.aspect = w / h;
 		camera.updateProjectionMatrix();
 		renderer.setSize(w, h);
+		if (isReducedMotion) renderStill();
 	};
-	window.addEventListener("resize", onResize);
+	window.addEventListener("resize", onResize, {
+		signal: eventController?.signal,
+	});
+}
+
+function renderStill() {
+	if (!isSceneReady || !isSceneVisible || document.hidden || !isReducedMotion)
+		return;
+	renderer.render(scene, camera);
+}
+
+function stopAnimation() {
+	if (animationId !== null) cancelAnimationFrame(animationId);
+	animationId = null;
+}
+
+function syncAnimation() {
+	stopAnimation();
+	if (!isSceneReady) return;
+	controls.autoRotate =
+		!isReducedMotion && (musicPlayerConfig.visualizer?.autoRotate ?? true);
+	controls.enableDamping = !isReducedMotion;
+	meteorMesh.visible = !isReducedMotion;
+	particleMesh.visible = !isReducedMotion;
+	if (!isSceneVisible || document.hidden) return;
+	if (isReducedMotion) {
+		controls.update();
+		renderStill();
+		return;
+	}
+	// 返回标签页时丢弃停留时长，避免一帧移动过远。
+	clock.getDelta();
+	animationId = requestAnimationFrame(animate);
 }
 
 function animate() {
+	if (!isSceneReady || !isSceneVisible || document.hidden || isReducedMotion) {
+		stopAnimation();
+		return;
+	}
 	animationId = requestAnimationFrame(animate);
 	const delta = clock.getDelta();
 	const elapsed = clock.getElapsedTime();
@@ -762,8 +821,12 @@ function animate() {
 }
 
 function cleanup() {
-	if (animationId) cancelAnimationFrame(animationId);
-	if (onResize) window.removeEventListener("resize", onResize);
+	isSceneReady = false;
+	stopAnimation();
+	eventController?.abort();
+	visibilityObserver?.disconnect();
+	motionQuery?.removeEventListener("change", onMotionChange);
+	audioAnalyzer.setEvents({});
 	if (renderer) {
 		renderer.dispose();
 		if (container && renderer.domElement.parentNode === container) {
@@ -782,13 +845,37 @@ function cleanup() {
 		particleMesh.geometry.dispose();
 		(particleMesh.material as THREE.Material).dispose();
 	}
+	controls?.removeEventListener("change", renderStill);
 	controls?.dispose();
 }
 
+function onMotionChange(event: MediaQueryListEvent) {
+	isReducedMotion = event.matches;
+	syncAnimation();
+}
+
 onMount(() => {
-	init();
-	animate();
-	onSceneReady?.();
+	eventController = new AbortController();
+	motionQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
+	isReducedMotion = motionQuery.matches;
+	try {
+		init();
+		isSceneReady = true;
+		visibilityObserver = new IntersectionObserver((entries) => {
+			isSceneVisible = entries.some((entry) => entry.isIntersecting);
+			syncAnimation();
+		});
+		visibilityObserver.observe(container);
+		motionQuery.addEventListener("change", onMotionChange);
+		document.addEventListener("visibilitychange", syncAnimation, {
+			signal: eventController.signal,
+		});
+		onSceneReady?.();
+	} catch (error) {
+		cleanup();
+		console.warn("Music visualizer scene could not initialize", error);
+		onSceneError?.();
+	}
 });
 
 onDestroy(cleanup);

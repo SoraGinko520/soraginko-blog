@@ -202,6 +202,12 @@ export default defineConfig({
 				if (pathname === "/friends/" && !siteConfig.pages.friends) {
 					return false;
 				}
+				if (pathname === "/fcircle/" && !siteConfig.pages.fcircle) {
+					return false;
+				}
+				if (pathname.startsWith("/projects/") && !siteConfig.pages.projects) {
+					return false;
+				}
 				if (pathname === "/sponsor/" && !siteConfig.pages.sponsor) {
 					return false;
 				}

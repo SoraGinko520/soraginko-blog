@@ -1,4 +1,4 @@
-import type { MusicPlayerConfig } from "../types/config";
+import type { MusicPlayerConfig } from "@/types/config";
 
 // 音乐播放器配置
 export const musicPlayerConfig: MusicPlayerConfig = {
@@ -6,10 +6,10 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	// 在本配置文件把showInNavbar设为false即可关闭导航栏入口
 
 	// 是否在导航栏显示音乐播放器入口
-	showInNavbar: false,
+	showInNavbar: true,
 
 	// 使用方式："meting" 使用 Meting API，"local" 使用本地音乐列表
-	mode: "local",
+	mode: "meting",
 
 	// 默认音量 (0-1)
 	volume: 0.6,
@@ -20,14 +20,16 @@ export const musicPlayerConfig: MusicPlayerConfig = {
 	// 是否显启用歌词
 	showLyrics: true,
 
-	// 禁用时不请求任何音乐服务。
+	// 复用原站歌单数据，不复制音频文件；第三方服务失败时允许用户重试。
 	meting: {
-		api: "",
+		api: "https://api.qijieya.cn/meting/?server=:server&type=:type&id=:id",
 		server: "netease",
 		type: "playlist",
-		id: "",
+		id: "17955431099",
 		auth: "",
-		fallbackApis: [],
+		fallbackApis: [
+			"https://api.moeyao.cn/meting/?server=:server&type=:type&id=:id",
+		],
 	},
 	local: { playlist: [] },
 

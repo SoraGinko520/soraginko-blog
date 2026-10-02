@@ -70,6 +70,11 @@ const profileConfig = JSON.stringify({
 	locale,
 	anniversary: {
 		name: calendarConfig.siteAnniversary?.name ?? "",
+		// 公历周年按访问当天重算；农历继续使用构建期换算的事件序列。
+		solarDate:
+			anniversaryDate?.type === "solar"
+				? { month: anniversaryDate.month, day: anniversaryDate.day }
+				: null,
 		occurrences: anniversaryOccurrences,
 	},
 	labels: {
@@ -214,7 +219,7 @@ const profileConfig = JSON.stringify({
 					</div>
 				</article>
 
-				<article class="profile-card__event" data-profile-event="anniversary">
+				{anniversaryDate && <article class="profile-card__event" data-profile-event="anniversary">
 					<div class="profile-card__event-main">
 						<strong class="profile-card__event-title" data-profile-event-title>--</strong>
 						<span class="profile-card__event-date" data-profile-event-date></span>
@@ -232,7 +237,7 @@ const profileConfig = JSON.stringify({
 						</span>
 						<span class="profile-card__remaining" data-profile-event-remaining>--</span>
 					</div>
-				</article>
+				</article>}
 			</div>
 
 			<div class="profile-card__pane" data-profile-pane="site" hidden>
