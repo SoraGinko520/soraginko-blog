@@ -14,10 +14,11 @@ let cachedHeadings: Map<string, MarkdownHeading[]> | null = null;
 
 async function getAllPosts(): Promise<CollectionEntry<"posts">[]> {
 	if (cachedPosts) return cachedPosts;
-	cachedPosts = await getCollection("posts", ({ data }) => {
+	const posts = await getCollection("posts", ({ data }) => {
 		return import.meta.env.PROD ? data.draft !== true : true;
 	});
-	return cachedPosts;
+	cachedPosts = posts;
+	return posts;
 }
 
 async function getRawSortedPosts(): Promise<CollectionEntry<"posts">[]> {
@@ -78,7 +79,14 @@ export async function getTagList(): Promise<Tag[]> {
 
 	const countMap: { [key: string]: number } = {};
 	allBlogPosts.forEach((post) => {
-		post.data.tags.forEach((tag) => {
+		const rawTags: unknown[] = Array.isArray(post.data.tags)
+			? post.data.tags
+			: [];
+		const tags = rawTags
+			.filter((tag): tag is string => typeof tag === "string")
+			.map((tag) => tag.trim())
+			.filter(Boolean);
+		tags.forEach((tag) => {
 			if (!countMap[tag]) countMap[tag] = 0;
 			countMap[tag]++;
 		});
@@ -221,8 +229,14 @@ export async function getCategoryTagGroups(): Promise<CategoryTagGroup[]> {
 		};
 
 		group.count++;
-		const postTags = new Set(
-			post.data.tags.map((tag) => tag.trim()).filter(Boolean),
+		const rawTags: unknown[] = Array.isArray(post.data.tags)
+			? post.data.tags
+			: [];
+		const postTags = new Set<string>(
+			rawTags
+				.filter((tag): tag is string => typeof tag === "string")
+				.map((tag) => tag.trim())
+				.filter(Boolean),
 		);
 		for (const tag of postTags) {
 			group.tagCounts.set(tag, (group.tagCounts.get(tag) ?? 0) + 1);
