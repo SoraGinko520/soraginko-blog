@@ -1,7 +1,7 @@
 import { calendarConfig } from "@/config";
 import { resolveYearlyDate } from "@/utils/lunar-utils";
 
-// 构建时拉取 timor.tech 中国法定节假日，合并 builtinHolidays，按 dateKey 分桶返回
+// 构建时拉取 holiday-cn 年度公告数据，合并 builtinHolidays，按 dateKey 分桶返回
 // 失败时仅返回 builtinHolidays 兜底
 // 该 endpoint 在 Astro SSG 期间会被预渲染为静态 JSON
 
@@ -15,54 +15,68 @@ export type HolidayEntry = {
 	rest?: number; // 假期持续天数（含当天）
 };
 
-type TimorHoliday = {
-	holiday: boolean; // true=放假, false=补班
+type OfficialHoliday = {
+	isOffDay: boolean; // true=放假, false=补班
 	name: string;
-	wage?: number;
-	date?: string;
-	rest?: number;
+	date: string;
 };
 
-type TimorResponse = {
-	code: number;
-	holiday: Record<string, TimorHoliday>;
-};
+function isOfficialHoliday(value: unknown): value is OfficialHoliday {
+	return (
+		typeof value === "object" &&
+		value !== null &&
+		"isOffDay" in value &&
+		typeof value.isOffDay === "boolean" &&
+		"name" in value &&
+		typeof value.name === "string" &&
+		"date" in value &&
+		typeof value.date === "string" &&
+		/^\d{4}-\d{2}-\d{2}$/.test(value.date)
+	);
+}
 
 async function fetchYear(
 	year: number,
 	baseUrl: string,
 ): Promise<HolidayEntry[]> {
 	const url = baseUrl.endsWith("/")
-		? `${baseUrl}${year}`
-		: `${baseUrl}/${year}`;
+		? `${baseUrl}${year}.json`
+		: `${baseUrl}/${year}.json`;
 	try {
 		const res = await fetch(url, {
 			headers: { Accept: "application/json" },
+			signal: AbortSignal.timeout(10_000),
 		});
 		if (!res.ok) {
 			console.warn(`[holidays] ${url} responded ${res.status}`);
 			return [];
 		}
-		const data = (await res.json()) as TimorResponse;
-		if (data.code !== 0 || !data.holiday) {
-			console.warn(`[holidays] ${url} returned non-zero code: ${data.code}`);
+		const data: unknown = await res.json();
+		if (
+			typeof data !== "object" ||
+			data === null ||
+			!("year" in data) ||
+			data.year !== year ||
+			!("days" in data) ||
+			!Array.isArray(data.days) ||
+			!data.days.every(isOfficialHoliday)
+		) {
+			console.warn(`[holidays] ${url} returned invalid annual data`);
 			return [];
 		}
 		const entries: HolidayEntry[] = [];
-		for (const item of Object.values(data.holiday)) {
-			const date =
-				item.date ||
-				// 兜底：若没 date 字段则跳过
-				"";
-			if (!date) continue;
+		for (const item of data.days) {
 			entries.push({
-				date,
+				date: item.date,
 				name: item.name,
-				isOfficial: item.holiday,
-				isWorkday: !item.holiday,
+				isOfficial: item.isOffDay,
+				isWorkday: !item.isOffDay,
 				source: "api",
 			});
 		}
+		console.info(
+			`[holidays] ${year}: ${entries.length} official calendar entries loaded`,
+		);
 		return entries;
 	} catch (err) {
 		console.warn(`[holidays] fetch ${url} failed:`, err);

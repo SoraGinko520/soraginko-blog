@@ -1,7 +1,7 @@
 import type { CalendarConfig } from "../types/config";
 
 // 日历小组件配置
-// 节日数据来源：timor.tech API（构建时拉取）+ builtinHolidays 内置补充
+// 节日数据来源：holiday-cn 年度公告数据（构建时拉取）+ builtinHolidays 内置补充
 // 生日 / 纪念日支持公历或农历（农历需 type: "lunar"，会自动换算为当年公历日期）
 const calendarBuildYear = new Date().getFullYear();
 
@@ -10,8 +10,8 @@ export const calendarConfig: CalendarConfig = {
 	holidayApi: {
 		// 是否启用 API 拉取
 		enable: true,
-		// timor.tech 中国法定节假日 API（含调休、补班）
-		url: "https://timor.tech/api/holiday/year/",
+		// holiday-cn 从国务院公告整理的年度 JSON（含调休、补班）
+		url: "https://raw.githubusercontent.com/NateScarlet/holiday-cn/master/",
 		// 拉取失败时是否仅用 builtinHolidays 兜底
 		fallbackOnError: true,
 		// 覆盖上一年、当年、下一年，供周年进度和下一次事件计算使用
