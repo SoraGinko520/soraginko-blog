@@ -493,7 +493,62 @@ function run(command, args, repoRoot) {
 		);
 }
 
-async function publishFriendsConfig(github, context, data, issueBody) {
+async function requestGithubStage(core, stage, request) {
+	const startedAt = Date.now();
+	const log = (message) =>
+		core?.info ? core.info(message) : console.log(message);
+	log(`[friend-api] ${stage} start`);
+	try {
+		const response = await request();
+		const status =
+			Number.isInteger(response.status) &&
+			response.status >= 100 &&
+			response.status <= 599
+				? response.status
+				: "unknown";
+		log(
+			`[friend-api] ${stage} ok status=${status} elapsedMs=${Date.now() - startedAt}`,
+		);
+		return response;
+	} catch (error) {
+		const status =
+			Number.isInteger(error.status) &&
+			error.status >= 100 &&
+			error.status <= 599
+				? error.status
+				: "unknown";
+		const codes = [];
+		let cause = error;
+		for (let depth = 0; cause && depth < 3; depth++, cause = cause.cause) {
+			if (
+				[
+					"ECONNRESET",
+					"ECONNREFUSED",
+					"ENOTFOUND",
+					"EAI_AGAIN",
+					"ETIMEDOUT",
+					"EPIPE",
+					"UND_ERR_CONNECT_TIMEOUT",
+					"UND_ERR_HEADERS_TIMEOUT",
+					"UND_ERR_BODY_TIMEOUT",
+					"UND_ERR_SOCKET",
+					"CERT_HAS_EXPIRED",
+					"UNABLE_TO_VERIFY_LEAF_SIGNATURE",
+					"DEPTH_ZERO_SELF_SIGNED_CERT",
+				].includes(cause.code)
+			)
+				codes.push(cause.code);
+		}
+		const diagnostic = `status=${status} codes=${codes.join(",") || "unknown"} elapsedMs=${Date.now() - startedAt}`;
+		// 不输出错误对象、请求头、响应正文或 URL，避免凭据进入日志及 Issue。
+		log(`[friend-api] ${stage} failed ${diagnostic}`);
+		throw new Error(
+			`GitHub API 阶段 ${stage} 失败（${diagnostic}）；请站长查看 Actions 中的 [friend-api] 诊断。`,
+		);
+	}
+}
+
+async function publishFriendsConfig(github, context, data, issueBody, core) {
 	const repoRoot = process.env.GITHUB_WORKSPACE || process.cwd();
 	const filePath = path.join(repoRoot, FRIENDS_CONFIG_RELATIVE_PATH);
 	const original = fs.readFileSync(filePath, "utf8");
@@ -509,36 +564,49 @@ async function publishFriendsConfig(github, context, data, issueBody) {
 	run("pnpm", ["build"], repoRoot);
 	const nextContent = fs.readFileSync(filePath, "utf8");
 	const { owner, repo } = context.repo;
-	const latestIssue = await github.rest.issues.get({
-		owner,
-		repo,
-		issue_number: context.payload.issue.number,
-	});
+	const latestIssue = await requestGithubStage(
+		core,
+		"post-build:issue-read",
+		() =>
+			github.rest.issues.get({
+				owner,
+				repo,
+				issue_number: context.payload.issue.number,
+			}),
+	);
 	if (latestIssue.data.body !== issueBody || latestIssue.data.state !== "open")
 		throw new Error("检查期间申请内容或状态已改变，请重新审核并批准。");
-	const repository = await github.rest.repos.get({ owner, repo });
+	const repository = await requestGithubStage(
+		core,
+		"post-build:repository-read",
+		() => github.rest.repos.get({ owner, repo }),
+	);
 	const branch = repository.data.default_branch;
-	const current = await github.rest.repos.getContent({
-		owner,
-		repo,
-		path: FRIENDS_CONFIG_RELATIVE_PATH,
-		ref: branch,
-	});
+	const current = await requestGithubStage(core, "post-build:config-read", () =>
+		github.rest.repos.getContent({
+			owner,
+			repo,
+			path: FRIENDS_CONFIG_RELATIVE_PATH,
+			ref: branch,
+		}),
+	);
 	if (Array.isArray(current.data) || current.data.type !== "file")
 		throw new Error("仓库中的友链配置不是文件。");
 	const remote = Buffer.from(current.data.content, "base64").toString("utf8");
 	if (remote !== original)
 		throw new Error("默认分支友链配置已改变，请重新批准，避免覆盖其他修改。");
 	if (nextContent === remote) return false;
-	await github.rest.repos.createOrUpdateFileContents({
-		owner,
-		repo,
-		path: FRIENDS_CONFIG_RELATIVE_PATH,
-		branch,
-		sha: current.data.sha,
-		message: `chore: 审核收录友链 #${context.payload.issue.number}`,
-		content: Buffer.from(nextContent).toString("base64"),
-	});
+	await requestGithubStage(core, "post-build:config-write", () =>
+		github.rest.repos.createOrUpdateFileContents({
+			owner,
+			repo,
+			path: FRIENDS_CONFIG_RELATIVE_PATH,
+			branch,
+			sha: current.data.sha,
+			message: `chore: 审核收录友链 #${context.payload.issue.number}`,
+			content: Buffer.from(nextContent).toString("base64"),
+		}),
+	);
 	return true;
 }
 
@@ -670,7 +738,13 @@ module.exports = async function processFriendRequest({
 			);
 			return;
 		}
-		const changed = await publishFriendsConfig(github, context, data, body);
+		const changed = await publishFriendsConfig(
+			github,
+			context,
+			data,
+			body,
+			core,
+		);
 		await reply(
 			changed
 				? "✅ 人工批准及静态检查通过，友链配置已写入默认分支。线上显示取决于后续部署，这条消息不代表已经上线。"
