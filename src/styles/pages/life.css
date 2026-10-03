@@ -16,15 +16,21 @@
 .life-book-stats > div { display: flex; gap: var(--space-2); }
 .life-book-stats dt { color: var(--content-meta); }
 .life-book-stats dd { margin: 0; font-variant-numeric: tabular-nums; }
-.life-book-filters { display: flex; flex-wrap: wrap; gap: var(--space-2); margin-bottom: var(--space-5); }
-.life-book-filters button { min-height: var(--control-size); padding-inline: var(--space-4); border: 1px solid var(--line-divider); border-radius: var(--radius-full); color: var(--deep-text); background: var(--article-surface-bg); cursor: pointer; }
-.life-book-filters button[aria-pressed="true"] { background: var(--btn-regular-bg-hover); border-color: var(--primary); color: var(--primary); }
+.life-book-filters { display: flex; flex-wrap: wrap; gap: var(--space-1); padding: var(--space-2); border: 1px solid var(--deep-text); border-radius: var(--radius-large); margin-bottom: var(--space-4); }
+.life-book-filters button { display: inline-flex; align-items: center; gap: var(--space-2); min-height: var(--control-size); padding-inline: var(--space-4); border: 0; border-radius: var(--radius-full); color: var(--deep-text); background: transparent; cursor: pointer; }
+.life-book-filters button[aria-pressed="true"] { background: var(--deep-text); color: var(--page-bg); }
+.life-book-filter-count { padding-inline: var(--space-2); border-radius: var(--radius-full); background: var(--btn-regular-bg); color: var(--content-meta); font-size: 0.75rem; font-variant-numeric: tabular-nums; }
+.life-book-filters button[aria-pressed="true"] .life-book-filter-count { background: var(--content-meta); color: var(--page-bg); }
 .life-bookshelf { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: var(--space-5); padding: var(--space-5); border: 1px solid var(--line-divider); border-radius: var(--radius-large); background: var(--article-surface-bg); }
 .life-book { display: flex; flex-direction: column; gap: var(--space-3); min-width: 0; padding-bottom: var(--space-3); border-bottom: var(--space-1) solid var(--line-divider); }
 .life-book > div:last-child { min-width: 0; flex: 1; }
-.life-book__cover { width: 100%; aspect-ratio: 2 / 3; align-self: flex-start; display: grid; place-items: center; overflow: hidden; border-left: var(--space-2) solid var(--line-divider); border-radius: var(--radius-small); background: var(--btn-regular-bg); color: var(--primary); box-shadow: var(--surface-shadow-hover); }
-.life-book__cover img { width: 100%; height: 100%; object-fit: cover; }
+.life-book__cover { position: relative; width: 100%; aspect-ratio: 25 / 36; align-self: flex-start; display: grid; place-items: center; overflow: hidden; border-left: var(--space-2) solid var(--line-divider); border-radius: var(--radius-small); background: var(--btn-regular-bg); color: var(--primary); box-shadow: var(--surface-shadow-hover); }
+.life-book__cover img { width: 100%; height: 100%; object-fit: contain; }
 .life-book__cover picture { display: contents; }
+.life-book__status { position: absolute; top: var(--space-2); left: var(--space-2); }
+.life-book__details { margin-top: var(--space-4); }
+.life-book__details summary { color: var(--primary); cursor: pointer; }
+.life-book__details .life-note { margin-top: var(--space-3); white-space: pre-line; }
 .life-book h3, .life-profile h3, .life-moment h3 { font-weight: 650; font-size: 1.125rem; margin-block: var(--space-2); overflow-wrap: anywhere; }
 .life-book__author { color: var(--content-meta); margin-bottom: var(--space-2); }
 .life-tag { display: inline-block; padding: var(--space-1) var(--space-2); border-radius: var(--radius-small); background: var(--btn-regular-bg-hover); color: var(--primary); font-size: 0.75rem; overflow-wrap: anywhere; }

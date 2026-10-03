@@ -772,7 +772,12 @@ export type Live2DModelConfig = {
 };
 
 // 友链配置
-export type BookStatus = "reading" | "finished" | "planned";
+export type BookStatus =
+	| "reading"
+	| "finished"
+	| "planned"
+	| "on_hold"
+	| "dropped";
 
 export interface LifeBook {
 	id: string;
@@ -780,6 +785,8 @@ export interface LifeBook {
 	author: string;
 	cover?: string;
 	status: BookStatus;
+	category: string;
+	tags: string[];
 	note?: string;
 }
 

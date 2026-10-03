@@ -3,7 +3,9 @@ export function initLifePage(): () => void {
 	const root = document.querySelector<HTMLElement>("[data-life-page]");
 	if (!root) return () => undefined;
 	const abortController = new AbortController();
-	const filters = root.querySelector<HTMLElement>("[data-life-book-filters]");
+	const filters = root.querySelectorAll<HTMLElement>(
+		"[data-life-book-filters]",
+	);
 	const books = [
 		...root.querySelectorAll<HTMLElement>("[data-life-book-status]"),
 	];
@@ -11,22 +13,50 @@ export function initLifePage(): () => void {
 		...root.querySelectorAll<HTMLButtonElement>("[data-life-book-filter]"),
 	];
 	const empty = root.querySelector<HTMLElement>("[data-life-books-empty]");
+	const topicButtons = [
+		...root.querySelectorAll<HTMLButtonElement>("[data-life-book-topic]"),
+	];
+	let activeBookStatus = "all";
+	let activeBookTopic = "all";
+	const filterBooks = () => {
+		for (const book of books) {
+			const matchesStatus =
+				activeBookStatus === "all" ||
+				book.dataset.lifeBookStatus === activeBookStatus;
+			const matchesTopic =
+				activeBookTopic === "all" ||
+				book.dataset.lifeBookTopics
+					?.split(" ")
+					.includes(encodeURIComponent(activeBookTopic));
+			book.hidden = !matchesStatus || !matchesTopic;
+		}
+		if (empty) empty.hidden = books.some((book) => !book.hidden);
+	};
 	for (const button of buttons) {
 		button.addEventListener(
 			"click",
 			() => {
-				const status = button.dataset.lifeBookFilter;
-				for (const book of books)
-					book.hidden =
-						status !== "all" && book.dataset.lifeBookStatus !== status;
+				activeBookStatus = button.dataset.lifeBookFilter || "all";
 				for (const item of buttons)
 					item.setAttribute("aria-pressed", String(item === button));
-				if (empty) empty.hidden = books.some((book) => !book.hidden);
+				filterBooks();
 			},
 			{ signal: abortController.signal },
 		);
 	}
-	if (filters) filters.hidden = false;
+	for (const button of topicButtons) {
+		button.addEventListener(
+			"click",
+			() => {
+				activeBookTopic = button.dataset.lifeBookTopic || "all";
+				for (const item of topicButtons)
+					item.setAttribute("aria-pressed", String(item === button));
+				filterBooks();
+			},
+			{ signal: abortController.signal },
+		);
+	}
+	for (const filter of filters) filter.hidden = false;
 	const animeRoot = root.querySelector<HTMLElement>("[data-life-anime]");
 	const animeControls = animeRoot?.querySelector<HTMLElement>(
 		"[data-life-anime-controls]",

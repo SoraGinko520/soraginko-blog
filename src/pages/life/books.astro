@@ -15,9 +15,11 @@ if (!siteConfig.pages.life) return Astro.redirect("/404/");
 const title = i18n(I18nKey.lifeBooks);
 const description = i18n(I18nKey.lifeBooksDescription);
 const bookLabels: Record<BookStatus, string> = {
-	reading: i18n(I18nKey.lifeReading),
 	finished: i18n(I18nKey.lifeFinished),
+	reading: i18n(I18nKey.lifeReading),
 	planned: i18n(I18nKey.lifePlanned),
+	on_hold: i18n(I18nKey.lifeBookOnHold),
+	dropped: i18n(I18nKey.lifeBookDropped),
 };
 const books = await Promise.all(
 	lifeConfig.books.map(async (book) => ({
@@ -29,6 +31,10 @@ const books = await Promise.all(
 		}),
 	})),
 );
+// 分类与题材共用第一行，数量按书籍去重，不复制参考作者的分类。
+const topics = [
+	...new Set(books.flatMap((book) => [book.category, ...book.tags])),
+];
 ---
 
 <MainGridLayout title={title} description={description} hasOwnH1={true}>
@@ -38,15 +44,19 @@ const books = await Promise.all(
 		<section id="books" class="life-section" aria-label={title}>
 			<dl class="life-book-stats">{Object.entries(bookLabels).map(([status, label]) => <div><dt>{label}</dt><dd>{books.filter((book) => book.status === status).length}</dd></div>)}</dl>
 			{books.length > 0 ? <>
-				<div class="life-book-filters" role="group" aria-label={title} data-life-book-filters hidden>
-					<button type="button" data-life-book-filter="all" aria-pressed="true">{i18n(I18nKey.lifeAllBooks)}</button>
-					{Object.entries(bookLabels).map(([status, label]) => <button type="button" data-life-book-filter={status} aria-pressed="false">{label}</button>)}
+				<div class="life-book-filters" role="group" aria-label={i18n(I18nKey.lifeBookTopics)} data-life-book-filters hidden>
+					<button type="button" data-life-book-topic="all" aria-pressed="true"><span>{i18n(I18nKey.lifeAllBooks)}</span><span class="life-book-filter-count">{books.length}</span></button>
+					{topics.map((topic) => <button type="button" data-life-book-topic={topic} aria-pressed="false"><span>{topic}</span><span class="life-book-filter-count">{books.filter((book) => book.category === topic || book.tags.includes(topic)).length}</span></button>)}
 				</div>
-				<div class="life-bookshelf">{books.map((book) => <article class="life-book" data-life-book-status={book.status}>
-					<div class="life-book__cover">{book.image ? <CoverImage cover={book.image} alt={book.title} /> : <Icon name="material-symbols:menu-book-outline" aria-hidden="true" />}</div>
-					<div><span class="life-tag">{bookLabels[book.status]}</span><h3>{book.title}</h3><p class="life-book__author">{book.author}</p>{book.note && <p class="life-note">{book.note}</p>}</div>
+				<div class="life-book-filters" role="group" aria-label={i18n(I18nKey.lifeBookStatuses)} data-life-book-filters hidden>
+					<button type="button" data-life-book-filter="all" aria-pressed="true"><span>{i18n(I18nKey.lifeAllBooks)}</span><span class="life-book-filter-count">{books.length}</span></button>
+					{Object.entries(bookLabels).map(([status, label]) => <button type="button" data-life-book-filter={status} aria-pressed="false"><span>{label}</span><span class="life-book-filter-count">{books.filter((book) => book.status === status).length}</span></button>)}
+				</div>
+				<div class="life-bookshelf">{books.map((book) => <article class="life-book" data-life-book-status={book.status} data-life-book-topics={[book.category, ...book.tags].map(encodeURIComponent).join(" ")}>
+					<div class="life-book__cover">{book.image ? <CoverImage cover={book.image} alt={book.title} /> : <Icon name="material-symbols:menu-book-outline" aria-hidden="true" />}<span class="life-book__status life-tag">{bookLabels[book.status]}</span></div>
+					<div><h3>{book.title}</h3><p class="life-book__author">{book.author}</p><span class="life-tag">{book.category}</span><ul class="life-tags" aria-label={i18n(I18nKey.lifeBookTopics)}>{book.tags.map((tag) => <li class="life-tag">{tag}</li>)}</ul>{book.note && <details class="life-book__details"><summary>{i18n(I18nKey.lifeBookSynopsis)}</summary><p class="life-note">{book.note}</p></details>}</div>
 				</article>)}</div>
-				<p class="life-empty" data-life-books-empty hidden>{i18n(I18nKey.lifeBooksEmpty)}</p>
+				<p class="life-empty" data-life-books-empty role="status" hidden>{i18n(I18nKey.lifeBooksNoResults)}</p>
 			</> : <p class="life-empty">{i18n(I18nKey.lifeBooksEmpty)}</p>}
 		</section>
 	</div>

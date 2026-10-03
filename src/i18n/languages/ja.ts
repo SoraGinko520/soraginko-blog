@@ -28,6 +28,13 @@ export const ja: Translation = {
 	[Key.lifeReading]: "読書中",
 	[Key.lifeFinished]: "読了",
 	[Key.lifePlanned]: "読みたい",
+	[Key.lifeBookOnHold]: "保留",
+	[Key.lifeBookDropped]: "中断",
+	[Key.lifeBookTopics]: "本の分類・ジャンルで絞り込む",
+	[Key.lifeBookStatuses]: "読書状態で絞り込む",
+	[Key.lifeBookSynopsis]: "あらすじ",
+	[Key.lifeBooksNoResults]:
+		"この分類と読書状態に該当する本はありません。別の条件をお試しください。",
 	[Key.lifeBilibili]: "Bilibili",
 	[Key.lifeBilibiliDescription]:
 		"Bilibili の公開アニメ・ドラマリストをビルド時に同期します。",

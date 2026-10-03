@@ -22,8 +22,8 @@ export const footerConfig: FooterConfig = {
 	// Powered by 信息
 	moeIcp: {
 		enabled: true,
-		text: "萌ICP备20260283号",
-		url: "https://icp.gov.moe/?keyword=20260283",
+		text: "萌ICP备20261035号",
+		url: "https://icp.gov.moe/?keyword=20261035",
 	},
 	poweredBy: [
 		{ label: "框架", name: "Astro", href: "https://astro.build" },

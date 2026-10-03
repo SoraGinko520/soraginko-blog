@@ -279,7 +279,7 @@ category: 生活杂谈
 
 ### 如何新增一本书
 
-在 `lifeConfig.books` 添加条目，`id/title/author/status` 必填，`cover/note` 可选：
+在 `lifeConfig.books` 添加条目，`id/title/author/status/category/tags` 必填，`cover/note` 可选：
 
 ```ts
 {
@@ -288,11 +288,13 @@ category: 生活杂谈
   author: "作者",
   cover: "/assets/images/book-cover.webp",
   status: "reading",
+  category: "轻小说",
+  tags: ["奇幻", "冒险"],
   note: "自己的阅读短记。",
 }
 ```
 
-封面路径对应你实际放入 `public/assets/images/` 的图片；不填封面使用图标，不自动搜索书封。状态固定为 `reading`（在读）、`finished`（已读）、`planned`（想读）。书架统计来自实际条目，可点击状态筛选；没有 JS 时仍展示全部书籍。修改原条目即可更新状态或笔记，删除该条目即可移除，图片是否保留另行决定。
+封面路径对应实际图片：`/assets/images/...` 指向 `public/`，`assets/images/books/...` 指向 `src/` 并经现有封面管线优化；不填封面使用图标，不自动搜索书封。状态支持 `finished`（读过）、`reading`（在读）、`planned`（想读）、`on_hold`（搁置）、`dropped`（抛弃）。第一行分类与题材从 `category/tags` 自动汇总，每本书在同一标签下只计一次；第二行是固定阅读状态与真实数量，两行筛选共同生效。完整作品简介填写 `note`，在书卡下展开查看；没有 JS 时仍展示全部书籍。修改原条目即可更新状态或笔记，删除该条目即可移除，图片是否保留另行决定。
 
 ### 如何配置 Bilibili
 
@@ -841,7 +843,7 @@ siteStartDate
 
 - **版权与站名**：版权年份取构建年份，名称取 `homeConfig.name`。当前为 © 2026 SoraGinko；个人签名与联系链接继续保留。
 - **框架与主题**：`poweredBy` 维护显示名称和链接。当前框架为 Astro，直接源码基础为 Firefly-Mod（MmzMing/my-blog），不要改成无关主题名。
-- **萌 ICP**：`moeIcp.enabled/text/url` 控制独立第二行，当前是“萌ICP备20260283号”，链接 `https://icp.gov.moe/?keyword=20260283`，新标签打开并带 `noopener noreferrer`。这不是工信部正式备案，不能移入 `beian.icp`。
+- **萌 ICP**：`moeIcp.enabled/text/url` 控制独立第二行，当前是“萌ICP备20261035号”，链接 `https://icp.gov.moe/?keyword=20261035`，新标签打开并带 `noopener noreferrer`。这不是工信部正式备案，不能移入 `beian.icp`。
 - **正式备案**：`beian.icp/police` 当前为空，仅在拥有真实正式备案后填写；不编造备案号。
 - **运行时间**：使用 `siteConfig.siteStartDate` 的真实起站时刻（见第 13 节），已有常驻页脚逻辑每秒更新，不因 Swup 导航或重新构建归零；无效/未来日期显示待设置。
 - **最后更新时间**：使用构建产物内保存的构建时间。它不是文章更新时间或 Vercel 成功上线时间，重新构建才改变基准；跨日后显示真实过去天数。

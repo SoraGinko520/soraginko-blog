@@ -28,6 +28,13 @@ export const ru: Translation = {
 	[Key.lifeReading]: "Читаю",
 	[Key.lifeFinished]: "Прочитано",
 	[Key.lifePlanned]: "Хочу прочитать",
+	[Key.lifeBookOnHold]: "Отложено",
+	[Key.lifeBookDropped]: "Брошено",
+	[Key.lifeBookTopics]: "Фильтр по категории или жанру",
+	[Key.lifeBookStatuses]: "Фильтр по статусу чтения",
+	[Key.lifeBookSynopsis]: "Описание",
+	[Key.lifeBooksNoResults]:
+		"Нет книг с этой категорией и статусом чтения. Выберите другой фильтр.",
 	[Key.lifeBilibili]: "Bilibili",
 	[Key.lifeBilibiliDescription]:
 		"Мои публичные подписки на аниме и сериалы Bilibili, синхронизируемые при сборке.",

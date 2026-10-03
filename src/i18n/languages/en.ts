@@ -28,6 +28,13 @@ export const en: Translation = {
 	[Key.lifeReading]: "Reading",
 	[Key.lifeFinished]: "Finished",
 	[Key.lifePlanned]: "Want to read",
+	[Key.lifeBookOnHold]: "On hold",
+	[Key.lifeBookDropped]: "Dropped",
+	[Key.lifeBookTopics]: "Filter by book category or genre",
+	[Key.lifeBookStatuses]: "Filter by reading status",
+	[Key.lifeBookSynopsis]: "Synopsis",
+	[Key.lifeBooksNoResults]:
+		"No books match this category and reading status. Try another filter.",
 	[Key.lifeBilibili]: "Bilibili",
 	[Key.lifeBilibiliDescription]:
 		"My public anime and drama follows, synced from Bilibili at build time.",
