@@ -600,6 +600,10 @@ export const ja: Translation = {
 		"ウェブサイト URL は http または https のみ対応しています",
 	[Key.gbLinkInvalid]: "ウェブサイト URL の形式が正しくありません",
 	[Key.gbSendFailed]: "メッセージの送信に失敗しました",
+	[Key.gbSubmittedForReview]:
+		"メッセージを送信しました。管理者の承認をお待ちください。",
+	[Key.gbSubmittedNotPublic]:
+		"メッセージを送信しました。まだ公開されていません。",
 	[Key.gbEditFailed]:
 		"メッセージの編集に失敗しました。少し待ってから再試行してください",
 	[Key.gbDeleteFailed]:

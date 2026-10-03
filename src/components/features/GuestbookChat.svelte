@@ -32,9 +32,10 @@ import type {
 } from "@/types/guestbook-chat";
 import {
 	appendGuestbookImage,
+	buildGuestbookCommentPayload,
 	buildGuestbookEditedMessageBody,
-	buildGuestbookMessageBody,
 	flattenGuestbookComments,
+	GuestbookSubmissionError,
 	getGuestbookErrorMessage,
 	getGuestbookInitials,
 	getGuestbookTextLength,
@@ -68,6 +69,7 @@ let initialLoading = $state(true);
 let initialError = $state("");
 let syncError = $state("");
 let composerError = $state("");
+let submissionNotice = $state("");
 let loadingOlder = $state(false);
 let syncing = $state(false);
 let loggingIn = $state(false);
@@ -734,7 +736,8 @@ function validateComposer(content: string): string {
 				? i18n(I18nKey.gbGuestProfileRequiredDisabled)
 				: i18n(I18nKey.gbGuestProfileRequired);
 	}
-	if (profile.mail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(profile.mail)) {
+	const mail = profile.mail.trim();
+	if (mail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/u.test(mail)) {
 		return i18n(I18nKey.gbEmailInvalid);
 	}
 	if (profile.link) {
@@ -761,6 +764,7 @@ async function sendMessage(
 		attachment,
 	);
 	composerError = validateComposer(content);
+	submissionNotice = "";
 	if (composerError) return false;
 
 	const selectedTarget = replyTarget;
@@ -794,20 +798,46 @@ async function sendMessage(
 			serverURL,
 			lang,
 			token: authUser?.token,
-			comment: {
-				nick: authUser?.display_name || profile.nick.trim(),
-				mail: authUser?.email || profile.mail.trim() || undefined,
-				link: authUser?.url || profile.link.trim() || undefined,
-				comment: buildGuestbookMessageBody(content, target),
+			comment: buildGuestbookCommentPayload({
+				profile,
+				authUser,
+				content,
+				target,
 				ua: navigator.userAgent,
 				url: CHANNEL_PATH,
-			},
+			}),
 		});
 
-		if (response.errno || !response.data) {
-			throw new Error(response.errmsg || i18n(I18nKey.gbSendFailed));
+		if (response.errno !== 0 || !response.data) {
+			throw new GuestbookSubmissionError(
+				response.errno,
+				response.errmsg || i18n(I18nKey.gbSendFailed),
+			);
 		}
 
+		if (response.data.status === "waiting" || response.data.status === "spam") {
+			messages = messages.filter((message) => message.id !== tempId);
+			submissionNotice = i18n(
+				response.data.status === "waiting"
+					? I18nKey.gbSubmittedForReview
+					: I18nKey.gbSubmittedNotPublic,
+			);
+			return true;
+		}
+
+		// Waline's public comment type permits an omitted status in older responses.
+		// Only accept such responses if they contain an actual persisted comment.
+		if (
+			(response.data.status !== undefined &&
+				response.data.status !== "approved") ||
+			!Number.isFinite(response.data.objectId) ||
+			typeof response.data.comment !== "string"
+		) {
+			throw new GuestbookSubmissionError(
+				0,
+				"Invalid comment submission response",
+			);
+		}
 		messages = messages.filter((message) => message.id !== tempId);
 		messages = mergeGuestbookMessages(messages, [
 			normalizeGuestbookComment(response.data),
@@ -1304,6 +1334,8 @@ onMount(() => {
 					{draft}
 					{replyTarget}
 					{composerError}
+					{submissionNotice}
+					onNoticeDismiss={() => (submissionNotice = "")}
 					{isOffline}
 					{isSending}
 					{loggingIn}

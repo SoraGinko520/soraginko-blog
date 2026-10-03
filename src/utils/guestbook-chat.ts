@@ -1,6 +1,8 @@
 import type { WalineComment, WalineRootComment } from "@waline/api";
 import type {
 	GuestbookChatMessage,
+	GuestbookCommentPayload,
+	GuestbookCommentPayloadInput,
 	GuestbookEmojiPack,
 	GuestbookImageAttachment,
 } from "@/types/guestbook-chat";
@@ -287,8 +289,67 @@ export function buildGuestbookEditedMessageBody(
 	return `${marker}\n${content}`;
 }
 
+export function buildGuestbookCommentPayload({
+	profile,
+	authUser,
+	content,
+	target,
+	ua,
+	url,
+}: GuestbookCommentPayloadInput): GuestbookCommentPayload {
+	return {
+		nick: (authUser?.display_name || profile.nick).trim(),
+		mail: (authUser?.email || profile.mail).trim(),
+		link: (authUser?.url || profile.link).trim() || undefined,
+		comment: buildGuestbookMessageBody(content, target),
+		ua,
+		url,
+	};
+}
+
+export class GuestbookSubmissionError extends Error {
+	constructor(
+		public readonly errno: number,
+		public readonly errmsg: string,
+	) {
+		super(errmsg || `Guestbook submission failed (${errno})`);
+		this.name = "GuestbookSubmissionError";
+	}
+}
+
+function redactGuestbookDiagnostic(value: string): string {
+	if (/authorization|bearer|token|password|secret|密码|密钥/iu.test(value)) {
+		return "[credential-bearing diagnostic redacted]";
+	}
+	return value.replace(/\b[a-z][a-z0-9+.-]*:\/\/\S+/giu, "[URL redacted]");
+}
+
+function reportGuestbookError(error: unknown): void {
+	const record = isRecord(error) ? error : undefined;
+	const message =
+		error instanceof Error
+			? error.message
+			: typeof record?.errmsg === "string"
+				? record.errmsg
+				: typeof error === "string"
+					? error
+					: "Unknown guestbook error";
+	// Preserve narrow diagnostics despite production dropping direct console calls.
+	// Do not log the original object, which may contain headers or credentials.
+	const report = console.error.bind(console);
+	report("[guestbook] request failed", {
+		error: new Error(redactGuestbookDiagnostic(message)),
+		errno: typeof record?.errno === "number" ? record.errno : undefined,
+		errmsg:
+			typeof record?.errmsg === "string"
+				? redactGuestbookDiagnostic(record.errmsg)
+				: undefined,
+	});
+}
+
 export function getGuestbookErrorMessage(error: unknown): string {
 	if (error instanceof DOMException && error.name === "AbortError") return "";
+	reportGuestbookError(error);
 	if (error instanceof Error) {
 		const message = error.message;
 		if (/failed to fetch|networkerror|network request/iu.test(message)) {

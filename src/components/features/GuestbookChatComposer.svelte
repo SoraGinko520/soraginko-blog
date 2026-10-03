@@ -1,6 +1,7 @@
 <script lang="ts">
 import {
 	ArrowUp,
+	CheckCircle2,
 	ImagePlus,
 	LoaderCircle,
 	Reply,
@@ -33,6 +34,8 @@ interface Props {
 	draft: string;
 	replyTarget: GuestbookChatMessage | null;
 	composerError: string;
+	submissionNotice: string;
+	onNoticeDismiss: () => void;
 	isOffline: boolean;
 	isSending: boolean;
 	loggingIn: boolean;
@@ -56,6 +59,8 @@ let {
 	draft,
 	replyTarget,
 	composerError,
+	submissionNotice,
+	onNoticeDismiss,
 	isOffline,
 	isSending,
 	loggingIn,
@@ -644,6 +649,15 @@ async function handleImageSelection(event: Event) {
 		{/if}
 	</div>
 
+	{#if submissionNotice}
+		<div class="guestbook-composer__reply" role="status" aria-live="polite">
+			<CheckCircle2 size={16} aria-hidden="true" />
+			<div>{submissionNotice}</div>
+			<button type="button" onclick={onNoticeDismiss} aria-label={i18n(I18nKey.gbCloseTip)}>
+				<X size={16} aria-hidden="true" />
+			</button>
+		</div>
+	{/if}
 	{#if composerError}
 		<div class="guestbook-composer__error" role="alert">
 			<TriangleAlert size={16} aria-hidden="true" />

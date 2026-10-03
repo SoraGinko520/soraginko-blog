@@ -602,6 +602,8 @@ enum I18nKey {
 	gbLinkProtocolInvalid = "gbLinkProtocolInvalid",
 	gbLinkInvalid = "gbLinkInvalid",
 	gbSendFailed = "gbSendFailed",
+	gbSubmittedForReview = "gbSubmittedForReview",
+	gbSubmittedNotPublic = "gbSubmittedNotPublic",
 	gbEditFailed = "gbEditFailed",
 	gbDeleteFailed = "gbDeleteFailed",
 	gbLoginInvalidResponse = "gbLoginInvalidResponse",

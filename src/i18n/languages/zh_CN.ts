@@ -577,6 +577,8 @@ export const zh_CN: Translation = {
 	[Key.gbLinkProtocolInvalid]: "网站地址仅支持 http 或 https",
 	[Key.gbLinkInvalid]: "网站地址格式不正确",
 	[Key.gbSendFailed]: "消息发送失败",
+	[Key.gbSubmittedForReview]: "留言已提交，等待管理员审核。",
+	[Key.gbSubmittedNotPublic]: "留言已提交，尚未公开。",
 	[Key.gbEditFailed]: "消息修改失败，请稍后重试",
 	[Key.gbDeleteFailed]: "消息删除失败，请稍后重试",
 	[Key.gbLoginInvalidResponse]: "登录返回信息无效，请重新登录",

@@ -580,6 +580,8 @@ export const zh_TW: Translation = {
 	[Key.gbLinkProtocolInvalid]: "網站位址僅支援 http 或 https",
 	[Key.gbLinkInvalid]: "網站位址格式不正確",
 	[Key.gbSendFailed]: "訊息傳送失敗",
+	[Key.gbSubmittedForReview]: "留言已提交，等待管理員審核。",
+	[Key.gbSubmittedNotPublic]: "留言已提交，尚未公開。",
 	[Key.gbEditFailed]: "訊息修改失敗，請稍後重試",
 	[Key.gbDeleteFailed]: "訊息刪除失敗，請稍後重試",
 	[Key.gbLoginInvalidResponse]: "登入返回資訊無效，請重新登入",

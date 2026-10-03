@@ -1,4 +1,15 @@
-import type { UserInfo } from "@waline/api";
+import type { UserInfo, WalineCommentData } from "@waline/api";
+
+export type GuestbookCommentPayload = WalineCommentData & { mail: string };
+
+export interface GuestbookCommentPayloadInput {
+	profile: GuestbookProfile;
+	authUser: GuestbookAuthUser | null;
+	content: string;
+	target: GuestbookChatMessage | null;
+	ua: string;
+	url: string;
+}
 
 export type GuestbookMessageLocalState = "sending" | "failed";
 

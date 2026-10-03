@@ -602,6 +602,9 @@ export const ru: Translation = {
 	[Key.gbLinkProtocolInvalid]: "Ссылка должна использовать http или https",
 	[Key.gbLinkInvalid]: "Неверный формат ссылки",
 	[Key.gbSendFailed]: "Не удалось отправить сообщение",
+	[Key.gbSubmittedForReview]:
+		"Сообщение отправлено и ожидает проверки администратором.",
+	[Key.gbSubmittedNotPublic]: "Сообщение отправлено, но ещё не опубликовано.",
 	[Key.gbEditFailed]: "Не удалось изменить сообщение. Попробуйте позже",
 	[Key.gbDeleteFailed]: "Не удалось удалить сообщение. Попробуйте позже",
 	[Key.gbLoginInvalidResponse]: "Неверный ответ при входе. Войдите заново",

@@ -597,6 +597,10 @@ export const en: Translation = {
 	[Key.gbLinkProtocolInvalid]: "Website URL must use http or https",
 	[Key.gbLinkInvalid]: "Invalid website URL",
 	[Key.gbSendFailed]: "Failed to send message",
+	[Key.gbSubmittedForReview]:
+		"Your message has been submitted for administrator review.",
+	[Key.gbSubmittedNotPublic]:
+		"Your message has been submitted and is not public yet.",
 	[Key.gbEditFailed]: "Failed to edit message. Please try again later.",
 	[Key.gbDeleteFailed]: "Failed to delete message. Please try again later.",
 	[Key.gbLoginInvalidResponse]: "Invalid login response. Please sign in again.",
