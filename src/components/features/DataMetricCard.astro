@@ -19,6 +19,7 @@ interface Props {
 	visualImage?: string;
 	publicStatsUrl?: string;
 	publicStatsLabel?: string;
+	historyDetail?: string;
 }
 
 const {
@@ -33,6 +34,7 @@ const {
 	visualImage,
 	publicStatsUrl,
 	publicStatsLabel,
+	historyDetail,
 } = Astro.props;
 ---
 
@@ -61,6 +63,7 @@ const {
 		<p class="data-card__eyebrow">{eyebrow}</p>
 		<h3 class="data-card__title">{title}</h3>
 		<p class="data-card__detail" role={statKind === "visits" ? "status" : undefined}>{detail}</p>
+		{historyDetail && <p class="text-xs text-50 mt-2" data-visit-history>{historyDetail}</p>}
 		{publicStatsUrl && <a class="data-card__public-stats" href={publicStatsUrl} target="_blank" rel="noopener noreferrer">{publicStatsLabel} ↗</a>}
 	</div>
 	<details class="data-card__stats">

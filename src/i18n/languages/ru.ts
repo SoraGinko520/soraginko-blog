@@ -47,6 +47,13 @@ export const ru: Translation = {
 	[Key.lifeMomentsEmpty]: "Повседневные заметки ещё собираются.",
 	[Key.lifeContents]: "Разделы жизни",
 	[Key.visitsSummary]: "{uv} посетителей · {pv} просмотров страниц",
+	[Key.visitsSnapshotLabel]: "Исторические данные",
+	[Key.visitsNewService]:
+		"Счётчики нового сервиса без старых исторических данных",
+	[Key.visitsQuerySkipped]:
+		"Страницы с параметрами запроса не учитываются, чтобы не передавать параметры",
+	[Key.visitsSnapshotSource]:
+		"Исторический снимок от владельца сайта, не данные в реальном времени",
 	[Key.visitsVisitors]: "{count} посетителей",
 	[Key.visitsViews]: "{count} просмотров страниц",
 	[Key.lifeImage]: "Фото из заметки",

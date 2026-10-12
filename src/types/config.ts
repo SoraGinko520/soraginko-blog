@@ -5,6 +5,13 @@ import type {
 	SYSTEM_MODE,
 } from "../constants/constants";
 
+export type VisitStatisticsSnapshot = {
+	hostname: string;
+	siteUv: number;
+	sitePv: number;
+	pageViews: Record<string, number>;
+};
+
 export type SiteConfig = {
 	title: string;
 	subtitle: string;
@@ -99,6 +106,7 @@ export type SiteConfig = {
 
 	// 统计分析
 	analytics?: {
+		visitSnapshot?: VisitStatisticsSnapshot; // 站长提供的历史快照，不与实时计数相加
 		googleAnalyticsId?: string; // Google Analytics ID
 		microsoftClarityId?: string; // Microsoft Clarity ID
 		umamiAnalytics?: {

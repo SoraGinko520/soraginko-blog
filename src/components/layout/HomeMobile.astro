@@ -21,6 +21,7 @@ import { getGuidePostSets } from "@/utils/home-guide-grid.js";
 import { getFallbackFormat, getImageFormats } from "@/utils/image-utils";
 import { getUmamiShareUrl } from "@/utils/umami-pageviews";
 import { getPostUrlBySlug, getTagUrl } from "@/utils/url-utils";
+import { formatVisitSnapshot, getVisitSnapshot } from "@/utils/visit-snapshot";
 
 const posts = await getSortedPosts();
 const categories = await getCategoryList();
@@ -62,6 +63,8 @@ const contactItems = homeConfig.links.map((link) => ({
 }));
 const umamiConfig = siteConfig.analytics?.umamiAnalytics;
 const statsShareUrl = getUmamiShareUrl(umamiConfig?.shareId);
+const visitSnapshot = getVisitSnapshot();
+const visitDetail = `${i18n(I18nKey.visitsNewService)} · ${i18n(I18nKey.visitsLoading)} · ${i18n(I18nKey.siteStatsSource)}: 不蒜子（iBruce）`;
 ---
 
 <div
@@ -152,7 +155,7 @@ const statsShareUrl = getUmamiShareUrl(umamiConfig?.shareId);
 					data-stat-key="uv"
 					data-popup-value="--"
 					data-popup-label={i18n(I18nKey.siteStatsVisitors)}
-					data-popup-detail={`${i18n(I18nKey.visitsLoading)} · ${i18n(I18nKey.siteStatsSource)}: 不蒜子`}
+					data-popup-detail={visitDetail}
 				>
 					<span class="home-mobile-stat__value" data-mobile-stat="UV">--</span>
 					<span class="home-mobile-stat__label">
@@ -166,7 +169,7 @@ const statsShareUrl = getUmamiShareUrl(umamiConfig?.shareId);
 					data-stat-key="pv"
 					data-popup-value="--"
 					data-popup-label={i18n(I18nKey.viewsBrowseLabel)}
-					data-popup-detail={`${i18n(I18nKey.visitsLoading)} · ${i18n(I18nKey.siteStatsSource)}: 不蒜子`}
+					data-popup-detail={visitDetail}
 				>
 					<span class="home-mobile-stat__value" data-mobile-stat="PV">--</span>
 					<span class="home-mobile-stat__label">
@@ -176,6 +179,7 @@ const statsShareUrl = getUmamiShareUrl(umamiConfig?.shareId);
 			</div>
 			</div>
 			{statsShareUrl && <a class="home-mobile-stats-link" href={statsShareUrl} target="_blank" rel="noopener noreferrer">{i18n(I18nKey.viewUmamiStats)} ↗</a>}
+			{visitSnapshot && <p class="text-xs text-50" data-visit-snapshot-note>{formatVisitSnapshot(visitSnapshot)}</p>}
 			<div class="home-mobile-social" aria-label={i18n(I18nKey.contactMethods)}>
 				{
 					contactItems.map((link) => (

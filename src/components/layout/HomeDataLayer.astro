@@ -26,6 +26,7 @@ import {
 	getTagUrl,
 	url,
 } from "@/utils/url-utils";
+import { formatVisitSnapshot, getVisitSnapshot } from "@/utils/visit-snapshot";
 
 const posts = await getSortedPosts();
 const categories = await getCategoryList();
@@ -91,6 +92,11 @@ const articlePills = [
 ];
 const umamiConfig = siteConfig.analytics?.umamiAnalytics;
 const statsShareUrl = getUmamiShareUrl(umamiConfig?.shareId);
+const visitSnapshot = getVisitSnapshot();
+const visitDetail = `${i18n(I18nKey.visitsNewService)} · ${i18n(I18nKey.visitsLoading)} · ${i18n(I18nKey.siteStatsSource)}: 不蒜子（iBruce）`;
+const historyDetail = visitSnapshot
+	? formatVisitSnapshot(visitSnapshot)
+	: undefined;
 const visitPills = [
 	{
 		label: i18n(I18nKey.siteStatsVisitors),
@@ -106,7 +112,7 @@ const visitPills = [
 	},
 	{
 		label: i18n(I18nKey.siteStatsSource),
-		value: "不蒜子",
+		value: "不蒜子（iBruce）",
 		tone: "outline" as const,
 	},
 ];
@@ -126,7 +132,7 @@ const visitPills = [
 		</div>
 
 		<div class="home-data-layer__top-grid">
-			<DataMetricCard title={i18n(I18nKey.siteVisits)} eyebrow="VISITS" detail={`${i18n(I18nKey.visitsLoading)} · ${i18n(I18nKey.siteStatsSource)}: 不蒜子`} publicStatsUrl={statsShareUrl} publicStatsLabel={i18n(I18nKey.viewUmamiStats)} icon="material-symbols:visibility-outline-rounded" hoverTitle={i18n(I18nKey.visitTrajectory)} variant="square" pills={visitPills} statKind="visits" visualImage={homeConfig.dataLayer.visitImage} />
+			<DataMetricCard title={i18n(I18nKey.siteVisits)} eyebrow="VISITS" detail={visitDetail} historyDetail={historyDetail} publicStatsUrl={statsShareUrl} publicStatsLabel={i18n(I18nKey.viewUmamiStats)} icon="material-symbols:visibility-outline-rounded" hoverTitle={i18n(I18nKey.visitTrajectory)} variant="square" pills={visitPills} statKind="visits" visualImage={homeConfig.dataLayer.visitImage} />
 			<DataMetricCard title={i18n(I18nKey.articleArchive)} eyebrow="ARCHIVE" detail={`${posts.length}${i18n(I18nKey.postsCount)} · ${formatCompactNumber(totalWords)}${i18n(I18nKey.wordCount)}`} icon="material-symbols:article-outline" hoverTitle={i18n(I18nKey.contentIndex)} variant="wide" pills={articlePills} statKind="articles" visualImage={homeConfig.dataLayer.archiveImage} />
 		</div>
 

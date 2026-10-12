@@ -47,6 +47,13 @@ export const en: Translation = {
 	[Key.lifeMomentsEmpty]: "Everyday notes are still being collected.",
 	[Key.lifeContents]: "Life sections",
 	[Key.visitsSummary]: "{uv} visitors have stopped by · {pv} page views",
+	[Key.visitsSnapshotLabel]: "Historical record",
+	[Key.visitsNewService]:
+		"New service counts, excluding old historical records",
+	[Key.visitsQuerySkipped]:
+		"Pages with query parameters are not counted to avoid sharing those parameters",
+	[Key.visitsSnapshotSource]:
+		"Historical snapshot supplied by the site owner, not live data",
 	[Key.visitsVisitors]: "{count} visitors have stopped by",
 	[Key.visitsViews]: "{count} page views",
 	[Key.lifeImage]: "Photo from an everyday note",

@@ -2,6 +2,8 @@
 import Icon from "@components/common/Icon.astro";
 import I18nKey from "@/i18n/i18nKey";
 import { i18n } from "@/i18n/translation";
+import { getPostUrlBySlug } from "@/utils/url-utils";
+import { getVisitSnapshot } from "@/utils/visit-snapshot";
 
 export interface Props {
 	isHome?: boolean;
@@ -12,6 +14,10 @@ export interface Props {
 
 const { isHome, id, compact } = Astro.props;
 const enabled = !isHome && id;
+const pageSnapshot = id
+	? getVisitSnapshot()?.pageViews[getPostUrlBySlug(id)]
+	: undefined;
+const initialValue = i18n(I18nKey.pageViewsLoading);
 ---
 
 {enabled && (
@@ -20,7 +26,7 @@ const enabled = !isHome && id;
   >
     {compact ? (
       <>
-        <span class="text-50 text-sm font-medium" data-busuanzi-page-value role="status">{i18n(I18nKey.pageViewsLoading)}</span>
+        <span class="text-50 text-sm font-medium" data-busuanzi-page-value role="status" title={i18n(I18nKey.visitsNewService)}>{initialValue}</span>
         <span class="text-50 text-sm font-medium ml-1">
           {i18n(I18nKey.pageViews)}
         </span>
@@ -33,10 +39,11 @@ const enabled = !isHome && id;
         <span class="text-50 text-sm font-medium mr-1">
           {i18n(I18nKey.pageViews)}
         </span>
-        <span class="text-50 text-sm font-medium" data-busuanzi-page-value role="status">
-          {i18n(I18nKey.pageViewsLoading)}
+        <span class="text-50 text-sm font-medium" data-busuanzi-page-value role="status" title={i18n(I18nKey.visitsNewService)}>
+          {initialValue}
         </span>
       </>
     )}
+    {pageSnapshot !== undefined && <span class="text-50 text-xs ml-1" data-busuanzi-page-note title={i18n(I18nKey.visitsSnapshotSource)}>{i18n(I18nKey.visitsSnapshotLabel)} {pageSnapshot.toLocaleString()}</span>}
   </div>
 )}

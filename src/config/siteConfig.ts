@@ -148,6 +148,15 @@ export const siteConfig: SiteConfig = {
 
 	// 统计分析
 	analytics: {
+		// 2026-10-12 由站长提供，原统计截止时间未确认；不是接口恢复或迁移结果。
+		visitSnapshot: {
+			hostname: "soraginko.moe",
+			siteUv: 189,
+			sitePv: 670,
+			pageViews: {
+				"/posts/written-in-sophomore-year/": 34,
+			},
+		},
 		// Google Analytics ID
 		googleAnalyticsId: "",
 		// Microsoft Clarity ID

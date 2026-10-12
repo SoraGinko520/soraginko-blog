@@ -694,9 +694,11 @@ pnpm preview
 
 ## 10. 站点访问统计 / 不蒜子与 Umami 免费模式
 
-首页 UV / PV 和文章阅读量使用 **不蒜子公共计数（busuanzi.cc）**，不需要账号或私密 API Key。`src/utils/busuanzi-controller.ts` 适配公共脚本 3.6.9 的计数协议，并通过全站 Swup 页面孤岛统一发起请求；不要另外插入不蒜子脚本，否则会重复计数。每次首次打开和导航完成只请求一次，不轮询、不自动重试。修改 `siteConfig.site_url` 时，正式计数域名也会随构建更新。
+首页 UV / PV 和文章阅读量使用 **iBruce 原版不蒜子（busuanzi.ibruce.info）**，不需要账号或私密 API Key。`src/utils/busuanzi-controller.ts` 通过全站 Swup 页面孤岛加载一次 JSONP 计数回调，字段为 `site_uv`、`site_pv`、`page_pv`；不再请求原 `cdn.busuanzi.cc/api.php`。不要另外插入公共统计脚本，否则会重复计数。每次首次打开和导航完成只请求一次，不轮询、不自动重试；每次请求使用独立回调，超时、完成或退出页面时清理脚本和全局回调。修改 `siteConfig.site_url` 时，正式计数域名也会随构建更新。
 
-只有与 `siteConfig.site_url` 主机名一致的 HTTPS 页面发送请求。本地、Vercel Preview 和其他域名显示“统计仅在正式域名启用，预览不计数”；超时、被拦截或数据异常时显示“访问统计暂不可用”，不填造 0。公共服务没有本站可承诺的 SLA 或数据完整性保证；更换来源不会自动继承 Umami 历史访问量。UV 使用服务自己的去重口径，不等于永久去重的独立真人。
+`siteConfig.analytics.visitSnapshot` 保存站长于 2026-10-12 提供的历史快照：站点 UV 189、PV 670、`/posts/written-in-sophomore-year/` 阅读量 34。原统计截止时间未确认，这不是接口恢复或服务迁移结果。首页桌面、移动端和对应文章始终单独展示历史记录及来源说明。接口成功后新计数直接使用实际返回值，标注“新服务计数，未合并旧历史记录”，不把快照与返回值相加。失败时新计数保持不可用，不能拿历史数字冒充新服务返回值。快照只在配置的正式域名与其 hostname 一致时使用，修改站点域名不会自动沿用旧数字。
+
+只有与 `siteConfig.site_url` 主机名一致的 HTTPS 页面发送请求。iBruce 按浏览器 Referer 识别页面，采用与原版脚本一致的 `no-referrer-when-downgrade` 策略；为避免把查询参数发送到第三方，带查询参数的页面直接跳过计数并说明原因。普通首页及文章路径正常计数，锚点不会进入 Referer。本地、Vercel Preview 和其他域名也不发计数请求，可以展示明确标注的本站历史快照。公共服务没有本站可承诺的 SLA 或数据完整性保证；更换来源不会自动继承旧不蒜子或 Umami 数据。UV 使用服务自己的去重口径，不等于永久去重的独立真人。
 
 **Umami Cloud 免费方案仍为 Tracking + Share URL**，仅供独立后台分析。不购买 Cloud API，不添加 `UMAMI_API_KEY`，不抓取分享页 HTML，也不通过客户端 Share API 取数。会话回放保持关闭。
 
@@ -712,7 +714,7 @@ PUBLIC_UMAMI_SCRIPT_URL=
 - `SCRIPT_URL`：追踪代码中脚本的完整 HTTPS URL。它与 Website ID 用于插入 Tracking Script，收集访问与出站事件。
 - `SHARE_ID`：公开分享链接中的 ID，不是完整 URL。本站仅用于拼接 `https://cloud.umami.is/share/${PUBLIC_UMAMI_SHARE_ID}`，不会将它当作 JSON API。
 
-首页桌面访问卡、展开详情与移动端统计同步显示不蒜子响应中的 UV / PV，来源明确为“不蒜子”。文章详情使用本页 PV；没有已发布文章时，不能把文章页真实计数说成已验收。设置 Umami Share ID 后提供“查看 Umami 分析 ↗”，使用新标签页及 `noopener noreferrer`；这不是不蒜子数字的明细后台。
+首页桌面访问卡、展开详情与移动端统计同步显示 iBruce 响应中的 UV / PV，来源明确为“不蒜子（iBruce）”；历史访客 189、浏览 670 另行展示。文章详情使用新服务本页 PV，并单独保留已配置的历史阅读量；没有历史记录的文章不套用 34。设置 Umami Share ID 后提供“查看 Umami 分析 ↗”，使用新标签页及 `noopener noreferrer`；这不是不蒜子数字的明细后台。
 
 `.env` 不提交；`.env.example` 只保留空变量和说明。不要把密码、API Key 或 GitHub Token 放入任何 `PUBLIC_` 变量。公开统计是否展示哪些视图，由自己的 Umami Share 设置决定。
 
@@ -724,7 +726,7 @@ PUBLIC_UMAMI_SCRIPT_URL=
 2. 实际访问后，自己的 Umami 后台收到记录；配置存在或脚本标签存在不等于后台已收到数据。
 3. 首页公开统计链接能打开自己的 Share 页面。
 4. Network 不应出现 `cloud.umami.is/api/share/` 或博客主动发起的 Cloud Stats / Metrics 请求。
-5. 在正式域名检查不蒜子计数 POST 每次导航只有一次，首页数字及移动端弹层一致，文章显示本页 PV；断网和超时有明确空态。预览域名不发计数请求。构建检查或模拟响应通过不代表公共服务线上统计已验收。
+5. 在正式域名检查 iBruce JSONP 计数每次导航只有一次，旧 `cdn.busuanzi.cc/api.php` 不再被请求；首页数字及移动端弹层一致，文章显示新服务本页 PV，历史快照保持独立。断网和超时有明确空态；预览或带查询参数的页面不发计数请求。核对回调和脚本完成、超时、退出页面后均清理，旧响应不能覆盖新页面。构建检查或模拟响应通过不代表公共服务线上统计已验收。
 
 ---
 
