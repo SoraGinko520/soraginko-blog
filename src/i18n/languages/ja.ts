@@ -46,12 +46,12 @@ export const ja: Translation = {
 	[Key.lifeMomentsEmpty]: "日々の記録は整理中です。",
 	[Key.lifeContents]: "生活コンテンツ",
 	[Key.visitsSummary]: "{uv} 人が訪問 · {pv} 回閲覧",
-	[Key.visitsSnapshotLabel]: "過去の記録",
-	[Key.visitsNewService]: "新サービスの集計です。以前の記録は含みません",
+	[Key.visitsSnapshotLabel]: "過去の基準値",
+	[Key.visitsCombinedCounts]: "累計（過去の基準値を含む）",
 	[Key.visitsQuerySkipped]:
 		"パラメータの送信を避けるため、クエリ付きページは集計しません",
 	[Key.visitsSnapshotSource]:
-		"サイト管理者が提供した過去の記録です。リアルタイムのデータではありません",
+		"管理者提供の基準値を累計に加算。サービス間の訪問者の重複は除いていません",
 	[Key.visitsVisitors]: "{count} 人が訪問",
 	[Key.visitsViews]: "{count} 回閲覧",
 	[Key.lifeImage]: "日々の記録の写真",

@@ -41,7 +41,7 @@ enum I18nKey {
 	visitsSummary = "visitsSummary",
 	visitsSnapshotLabel = "visitsSnapshotLabel",
 	visitsSnapshotSource = "visitsSnapshotSource",
-	visitsNewService = "visitsNewService",
+	visitsCombinedCounts = "visitsCombinedCounts",
 	visitsQuerySkipped = "visitsQuerySkipped",
 	visitsVisitors = "visitsVisitors",
 	visitsViews = "visitsViews",

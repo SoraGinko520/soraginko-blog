@@ -64,7 +64,9 @@ const contactItems = homeConfig.links.map((link) => ({
 const umamiConfig = siteConfig.analytics?.umamiAnalytics;
 const statsShareUrl = getUmamiShareUrl(umamiConfig?.shareId);
 const visitSnapshot = getVisitSnapshot();
-const visitDetail = `${i18n(I18nKey.visitsNewService)} · ${i18n(I18nKey.visitsLoading)} · ${i18n(I18nKey.siteStatsSource)}: 不蒜子（iBruce）`;
+const visitDetail = `${i18n(I18nKey.visitsLoading)} · ${i18n(I18nKey.siteStatsSource)}: 不蒜子（iBruce）`;
+const initialUv = visitSnapshot?.siteUv.toLocaleString() ?? "--";
+const initialPv = visitSnapshot?.sitePv.toLocaleString() ?? "--";
 ---
 
 <div
@@ -153,11 +155,11 @@ const visitDetail = `${i18n(I18nKey.visitsNewService)} · ${i18n(I18nKey.visitsL
 					class="home-mobile-stat"
 					type="button"
 					data-stat-key="uv"
-					data-popup-value="--"
+					data-popup-value={initialUv}
 					data-popup-label={i18n(I18nKey.siteStatsVisitors)}
 					data-popup-detail={visitDetail}
 				>
-					<span class="home-mobile-stat__value" data-mobile-stat="UV">--</span>
+					<span class="home-mobile-stat__value" data-mobile-stat="UV">{initialUv}</span>
 					<span class="home-mobile-stat__label">
 						{i18n(I18nKey.siteStatsVisitors)}
 					</span>
@@ -167,11 +169,11 @@ const visitDetail = `${i18n(I18nKey.visitsNewService)} · ${i18n(I18nKey.visitsL
 					class="home-mobile-stat"
 					type="button"
 					data-stat-key="pv"
-					data-popup-value="--"
+					data-popup-value={initialPv}
 					data-popup-label={i18n(I18nKey.viewsBrowseLabel)}
 					data-popup-detail={visitDetail}
 				>
-					<span class="home-mobile-stat__value" data-mobile-stat="PV">--</span>
+					<span class="home-mobile-stat__value" data-mobile-stat="PV">{initialPv}</span>
 					<span class="home-mobile-stat__label">
 						{i18n(I18nKey.viewsBrowseLabel)}
 					</span>

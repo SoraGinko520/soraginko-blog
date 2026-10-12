@@ -93,20 +93,25 @@ const articlePills = [
 const umamiConfig = siteConfig.analytics?.umamiAnalytics;
 const statsShareUrl = getUmamiShareUrl(umamiConfig?.shareId);
 const visitSnapshot = getVisitSnapshot();
-const visitDetail = `${i18n(I18nKey.visitsNewService)} · ${i18n(I18nKey.visitsLoading)} · ${i18n(I18nKey.siteStatsSource)}: 不蒜子（iBruce）`;
+const visitSummary = visitSnapshot
+	? i18n(I18nKey.visitsSummary)
+			.replace("{uv}", visitSnapshot.siteUv.toLocaleString())
+			.replace("{pv}", visitSnapshot.sitePv.toLocaleString())
+	: "";
+const visitDetail = `${visitSummary ? `${i18n(I18nKey.visitsSnapshotLabel)} · ${visitSummary} · ` : ""}${i18n(I18nKey.visitsLoading)} · ${i18n(I18nKey.siteStatsSource)}: 不蒜子（iBruce）`;
 const historyDetail = visitSnapshot
 	? formatVisitSnapshot(visitSnapshot)
 	: undefined;
 const visitPills = [
 	{
 		label: i18n(I18nKey.siteStatsVisitors),
-		value: "--",
+		value: visitSnapshot?.siteUv.toLocaleString() ?? "--",
 		statKey: "UV",
 		tone: "light" as const,
 	},
 	{
 		label: i18n(I18nKey.viewsBrowseLabel),
-		value: "--",
+		value: visitSnapshot?.sitePv.toLocaleString() ?? "--",
 		statKey: "PV",
 		tone: "dark" as const,
 	},

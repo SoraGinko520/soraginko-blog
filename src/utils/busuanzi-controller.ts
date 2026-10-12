@@ -4,6 +4,7 @@ import {
 	definePageIsland,
 	definePersistentIsland,
 } from "@/utils/swup-lifecycle";
+import { getVisitSnapshot } from "@/utils/visit-snapshot";
 
 // iBruce 原版使用 JSONP，不同时加载公共脚本，避免与 Swup 导航重复计数。
 const BUSUANZI_ENDPOINT = "https://busuanzi.ibruce.info/busuanzi";
@@ -51,12 +52,17 @@ function requestCounts(signal: AbortSignal): Promise<unknown> {
 	});
 }
 
-function readCount(value: unknown): string | null {
+function readCount(value: unknown, baseline = 0): string | null {
 	if (typeof value !== "number" && typeof value !== "string") return null;
 	if (typeof value === "string" && !/^\d+$/.test(value)) return null;
 	const count = Number(value);
-	return Number.isSafeInteger(count) && count >= 0
-		? count.toLocaleString()
+	const total = count + baseline;
+	return Number.isSafeInteger(count) &&
+		count >= 0 &&
+		Number.isSafeInteger(baseline) &&
+		baseline >= 0 &&
+		Number.isSafeInteger(total)
+		? total.toLocaleString()
 		: null;
 }
 
@@ -81,7 +87,12 @@ export function initBusuanzi(): void {
 					"[data-busuanzi-page-value]",
 				);
 				const source = `${i18n(I18nKey.siteStatsSource)}: ${SOURCE_NAME}`;
-				const newService = i18n(I18nKey.visitsNewService);
+				const snapshot = getVisitSnapshot();
+				const combinedCounts = snapshot
+					? i18n(I18nKey.visitsCombinedCounts)
+					: "";
+				const baselineUv = snapshot?.siteUv.toLocaleString() ?? "--";
+				const baselinePv = snapshot?.sitePv.toLocaleString() ?? "--";
 				const syncPopup = (): void => {
 					const popup = document.querySelector<HTMLElement>(
 						".home-mobile [data-stats-popup]",
@@ -101,20 +112,26 @@ export function initBusuanzi(): void {
 						detailNode.textContent = activeButton.dataset.popupDetail ?? "";
 				};
 				const setStatus = (message: string, isLoading = false): void => {
-					// 新源不可用时不拿历史数字冒充新源；历史快照由独立节点始终展示。
-					const statusDetail = `${newService} · ${message} · ${source}`;
+					// 未取得新计数时只展示历史基数，并保留加载/不可用说明，不假定新增为零。
+					const baselineSummary = snapshot
+						? `${i18n(I18nKey.visitsSnapshotLabel)} · ${i18n(I18nKey.visitsSummary).replace("{uv}", baselineUv).replace("{pv}", baselinePv)} · `
+						: "";
+					const statusDetail = `${baselineSummary}${message} · ${source}`;
 					if (detail) {
 						detail.textContent = statusDetail;
+						detail.title = statusDetail;
 						detail.setAttribute("aria-busy", String(isLoading));
 					}
 					mobileButtons.forEach((button) => {
-						button.dataset.popupValue = "--";
+						const value =
+							button.dataset.statKey === "uv" ? baselineUv : baselinePv;
+						button.dataset.popupValue = value;
 						button.dataset.popupDetail = statusDetail;
 						button.title = statusDetail;
 						button.setAttribute("aria-busy", String(isLoading));
 						const node =
 							button.querySelector<HTMLElement>("[data-mobile-stat]");
-						if (node) node.textContent = "--";
+						if (node) node.textContent = value;
 					});
 					visitCard
 						?.querySelectorAll<HTMLElement>("[data-stat-source]")
@@ -126,14 +143,18 @@ export function initBusuanzi(): void {
 							'[data-stat-value="UV"], [data-stat-value="PV"]',
 						)
 						.forEach((node) => {
-							node.textContent = "--";
+							node.textContent =
+								node.dataset.statValue === "UV" ? baselineUv : baselinePv;
 						});
 					articleCounts.forEach((node) => {
-						node.textContent = isLoading
-							? i18n(I18nKey.pageViewsLoading)
-							: "--";
-						node.title = statusDetail;
-						node.setAttribute("aria-label", statusDetail);
+						node.textContent = node.dataset.busuanziPageBase
+							? readCount(node.dataset.busuanziPageBase)
+							: isLoading
+								? i18n(I18nKey.pageViewsLoading)
+								: "--";
+						const articleStatus = `${node.dataset.busuanziPageBase ? `${i18n(I18nKey.visitsSnapshotLabel)} ${node.textContent} · ` : ""}${message} · ${source}`;
+						node.title = articleStatus;
+						node.setAttribute("aria-label", articleStatus);
 						node.setAttribute("aria-busy", String(isLoading));
 					});
 					syncPopup();
@@ -164,9 +185,17 @@ export function initBusuanzi(): void {
 					.then((data: unknown) => {
 						if (!data || typeof data !== "object")
 							throw new Error("Invalid counts");
-						const uv = readCount("site_uv" in data ? data.site_uv : null);
-						const pv = readCount("site_pv" in data ? data.site_pv : null);
-						const pagePv = readCount("page_pv" in data ? data.page_pv : null);
+						// 每次从接口原始数值加固定基数，不能从已显示的累计数继续相加。
+						const uv = readCount(
+							"site_uv" in data ? data.site_uv : null,
+							snapshot?.siteUv ?? 0,
+						);
+						const pv = readCount(
+							"site_pv" in data ? data.site_pv : null,
+							snapshot?.sitePv ?? 0,
+						);
+						const rawPagePv = "page_pv" in data ? data.page_pv : null;
+						const pagePv = readCount(rawPagePv);
 						if (
 							uv === null ||
 							pv === null ||
@@ -178,7 +207,8 @@ export function initBusuanzi(): void {
 						if (request !== currentRequest || currentRequest.signal.aborted)
 							return;
 						if (detail) {
-							detail.textContent = `${newService} · ${i18n(I18nKey.visitsSummary).replace("{uv}", uv).replace("{pv}", pv)} · ${source}`;
+							detail.textContent = `${i18n(I18nKey.visitsSummary).replace("{uv}", uv).replace("{pv}", pv)} · ${source}`;
+							detail.title = combinedCounts;
 							detail.setAttribute("aria-busy", "false");
 						}
 						visitCard
@@ -190,8 +220,8 @@ export function initBusuanzi(): void {
 						mobileButtons.forEach((button) => {
 							const value = button.dataset.statKey === "uv" ? uv : pv;
 							button.dataset.popupValue = value;
-							button.dataset.popupDetail = `${newService} · ${i18n(button.dataset.statKey === "uv" ? I18nKey.visitsVisitors : I18nKey.visitsViews).replace("{count}", value)} · ${source}`;
-							button.title = `${newService} · ${source}`;
+							button.dataset.popupDetail = `${combinedCounts}${combinedCounts ? " · " : ""}${i18n(button.dataset.statKey === "uv" ? I18nKey.visitsVisitors : I18nKey.visitsViews).replace("{count}", value)} · ${source}`;
+							button.title = `${combinedCounts}${combinedCounts ? " · " : ""}${source}`;
 							button.setAttribute("aria-busy", "false");
 							const node =
 								button.querySelector<HTMLElement>("[data-mobile-stat]");
@@ -204,8 +234,13 @@ export function initBusuanzi(): void {
 								node.textContent = SOURCE_NAME;
 							});
 						articleCounts.forEach((node) => {
-							node.textContent = pagePv;
-							node.title = `${newService} · ${source}`;
+							node.textContent = readCount(
+								rawPagePv,
+								Number(node.dataset.busuanziPageBase ?? 0),
+							);
+							node.title = node.dataset.busuanziPageBase
+								? `${combinedCounts} · ${source}`
+								: source;
 							node.removeAttribute("aria-label");
 							node.setAttribute("aria-busy", "false");
 						});
