@@ -1,0 +1,74 @@
+---
+import Icon from "@components/common/Icon.astro";
+import I18nKey from "@/i18n/i18nKey";
+import { i18n } from "@/i18n/translation";
+---
+
+<aside id="site-compatibility-notice" class="site-compatibility-notice mx-auto max-w-5xl px-4 md:px-6" aria-label={i18n(I18nKey.compatibilityNoticeTitle)}>
+	<div class="site-compatibility-notice__bar grid grid-cols-[auto_1fr_auto] items-start gap-2 rounded-(--radius-medium) px-3 py-2 text-sm">
+		<Icon name="material-symbols:info-outline-rounded" class="mt-1 h-4 w-4 shrink-0" aria-hidden="true" />
+		<details>
+			<summary class="site-compatibility-notice__summary flex cursor-pointer flex-wrap items-center gap-x-3 gap-y-1 leading-6">
+				<span>{i18n(I18nKey.compatibilityNoticeSummary)}</span>
+				<span class="site-compatibility-notice__link shrink-0 underline underline-offset-4">{i18n(I18nKey.compatibilityNoticeDetails)}</span>
+			</summary>
+			<div class="site-compatibility-notice__details mt-2 space-y-2 border-t border-(--line-divider) pt-2 leading-relaxed">
+				<p>{i18n(I18nKey.compatibilityNoticeImpact)}</p>
+				<p>{i18n(I18nKey.compatibilityNoticeChoice)}</p>
+			</div>
+		</details>
+		<button type="button" data-compatibility-dismiss class="site-compatibility-notice__dismiss flex h-6 w-6 shrink-0 cursor-pointer items-center justify-center rounded-(--radius-small) hover:bg-(--btn-plain-bg-hover)" aria-label={i18n(I18nKey.compatibilityNoticeClose)}>
+			<Icon name="material-symbols:close-rounded" class="h-4 w-4" aria-hidden="true" />
+		</button>
+	</div>
+</aside>
+
+<style>
+	.site-compatibility-notice {
+		--notice-surface: var(--navbar-bg);
+		--notice-ink: var(--deep-text);
+		--notice-muted: var(--content-meta);
+		--notice-link: var(--link-color);
+		margin-block: var(--space-2);
+	}
+	.site-compatibility-notice[hidden] { display: none; }
+	.site-compatibility-notice__bar {
+		color: var(--notice-ink);
+		background: linear-gradient(105deg,
+			color-mix(in srgb, var(--notice-surface) 90%, transparent),
+			color-mix(in srgb, var(--notice-surface) 64%, transparent) 65%,
+			transparent);
+	}
+	.site-compatibility-notice__link { color: var(--notice-link); }
+	.site-compatibility-notice__details { color: var(--notice-muted); }
+	.site-compatibility-notice__summary { list-style: none; }
+	.site-compatibility-notice__summary::-webkit-details-marker { display: none; }
+	.site-compatibility-notice__summary:focus-visible,
+	.site-compatibility-notice__dismiss:focus-visible {
+		outline: 2px solid var(--primary);
+		outline-offset: var(--space-1);
+	}
+	/* 横条留在首页大图上缘，不占文档流；不是跟随导航的视口悬浮条。
+	   晴空原画在暗色主题下也保持日光，因此文字沿用其独立天空令牌。 */
+	:global(html:has(.home-page)) .site-compatibility-notice {
+		position: absolute;
+		top: var(--space-2);
+		inset-inline: 0;
+		z-index: 60;
+		margin-block: 0;
+	}
+	@media (min-width: 769px) {
+		:global(html:has(.home-hero)) .site-compatibility-notice {
+			--notice-surface: var(--sky-surface);
+			--notice-ink: var(--sky-ink);
+			--notice-muted: var(--sky-muted);
+			--notice-link: var(--sky-ink);
+			top: calc(var(--control-size) + var(--space-8));
+		}
+	}
+</style>
+
+<script>
+	import { initSiteCompatibilityNotice } from "@/utils/site-compatibility-notice-controller";
+	initSiteCompatibilityNotice();
+</script>

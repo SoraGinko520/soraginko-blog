@@ -2,6 +2,15 @@ import Key from "../i18nKey";
 import type { Translation } from "../translation";
 
 export const en: Translation = {
+	[Key.compatibilityNoticeTitle]: "Extension compatibility notice",
+	[Key.compatibilityNoticeSummary]:
+		"Blocking extensions may affect visit statistics, but not article text.",
+	[Key.compatibilityNoticeDetails]: "Learn more",
+	[Key.compatibilityNoticeImpact]:
+		"Extensions such as uBlock Origin may block Busuanzi requests. Statistics may show only the historical baseline or an unavailable notice. This does not mean historical records are lost.",
+	[Key.compatibilityNoticeChoice]:
+		"If you want to enable statistics, you can add an exception for this site only; there is no need to disable the extension globally. Keeping blocking enabled is also fine.",
+	[Key.compatibilityNoticeClose]: "Dismiss compatibility notice",
 	[Key.lifeAnimeNoResults]:
 		"No matching anime or drama. Try another keyword or category.",
 	[Key.lifeAnime]: "Anime",

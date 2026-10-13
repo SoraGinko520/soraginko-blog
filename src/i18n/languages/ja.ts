@@ -2,6 +2,15 @@ import Key from "../i18nKey";
 import type { Translation } from "../translation";
 
 export const ja: Translation = {
+	[Key.compatibilityNoticeTitle]: "拡張機能の互換性について",
+	[Key.compatibilityNoticeSummary]:
+		"ブロック拡張機能はアクセス統計に影響する場合がありますが、記事本文は読めます。",
+	[Key.compatibilityNoticeDetails]: "詳細を見る",
+	[Key.compatibilityNoticeImpact]:
+		"uBlock Origin などが不蒜子（Busuanzi）へのリクエストをブロックすると、統計には過去の基準値のみ、または利用できない旨が表示されます。過去の記録が失われたという意味ではありません。",
+	[Key.compatibilityNoticeChoice]:
+		"統計を有効にしたい場合は、このサイトだけを例外にできます。拡張機能全体を無効にする必要はなく、ブロックを続けてもかまいません。",
+	[Key.compatibilityNoticeClose]: "互換性のお知らせを閉じる",
 	[Key.lifeAnimeNoResults]:
 		"一致する作品がありません。別のキーワードやカテゴリをお試しください。",
 	[Key.lifeAnime]: "アニメ",

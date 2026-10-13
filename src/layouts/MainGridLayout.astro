@@ -1,5 +1,6 @@
 ---
 import Live2DWidget from "@components/features/Live2DWidget.astro";
+import SiteCompatibilityNotice from "@components/features/SiteCompatibilityNotice.astro";
 import SpineModel from "@components/features/SpineModel.astro";
 import ArticleTocPanel from "@components/layout/ArticleTocPanel.astro";
 import Footer from "@components/layout/Footer.astro";
@@ -85,6 +86,7 @@ const navLinks = navBarConfig.links.map((item) => {
 	</div>
 
 	<NavMenuPanel links={navLinks} />
+	<SiteCompatibilityNotice />
 
 	<div class="relative w-full" id="main-grid-wrapper">
 		<div class="mx-auto max-w-5xl px-4 md:px-6" data-sidebar-position="none" id="main-grid">

@@ -2,6 +2,15 @@ import Key from "../i18nKey";
 import type { Translation } from "../translation";
 
 export const zh_CN: Translation = {
+	[Key.compatibilityNoticeTitle]: "插件兼容性提醒",
+	[Key.compatibilityNoticeSummary]:
+		"拦截插件可能影响访问统计，不影响文章正文阅读。",
+	[Key.compatibilityNoticeDetails]: "查看说明",
+	[Key.compatibilityNoticeImpact]:
+		"uBlock Origin 等插件可能阻止不蒜子请求，统计卡会仅显示历史基数，或提示暂不可用。这不代表历史记录丢失。",
+	[Key.compatibilityNoticeChoice]:
+		"如果愿意启用统计，可仅为本站添加例外；无需关闭整个插件。继续保留拦截也完全可以。",
+	[Key.compatibilityNoticeClose]: "关闭兼容性提醒",
 	[Key.lifeAnimeNoResults]: "没有匹配的番剧或追剧，试试其他关键词或分类。",
 	[Key.lifeAnime]: "番剧",
 	[Key.lifeDrama]: "追剧",

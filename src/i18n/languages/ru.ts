@@ -2,6 +2,15 @@ import Key from "../i18nKey";
 import type { Translation } from "../translation";
 
 export const ru: Translation = {
+	[Key.compatibilityNoticeTitle]: "Совместимость с расширениями",
+	[Key.compatibilityNoticeSummary]:
+		"Блокировщики могут влиять на статистику посещений, но не мешают читать статьи.",
+	[Key.compatibilityNoticeDetails]: "Подробнее",
+	[Key.compatibilityNoticeImpact]:
+		"Расширения, например uBlock Origin, могут блокировать запросы Busuanzi. Тогда статистика показывает только исторические исходные значения или сообщение о недоступности. Это не означает потерю исторических данных.",
+	[Key.compatibilityNoticeChoice]:
+		"Если хотите включить статистику, можно добавить исключение только для этого сайта, не отключая расширение целиком. Можно также оставить блокировку включённой.",
+	[Key.compatibilityNoticeClose]: "Закрыть уведомление о совместимости",
 	[Key.lifeAnimeNoResults]:
 		"Нет подходящих аниме или сериалов. Попробуйте другое слово или категорию.",
 	[Key.lifeAnime]: "Аниме",

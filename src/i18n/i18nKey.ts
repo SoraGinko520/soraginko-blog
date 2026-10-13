@@ -1,4 +1,10 @@
 enum I18nKey {
+	compatibilityNoticeTitle = "compatibilityNoticeTitle",
+	compatibilityNoticeSummary = "compatibilityNoticeSummary",
+	compatibilityNoticeDetails = "compatibilityNoticeDetails",
+	compatibilityNoticeImpact = "compatibilityNoticeImpact",
+	compatibilityNoticeChoice = "compatibilityNoticeChoice",
+	compatibilityNoticeClose = "compatibilityNoticeClose",
 	lifeAnime = "lifeAnime",
 	lifeDrama = "lifeDrama",
 	lifeAnimeAll = "lifeAnimeAll",

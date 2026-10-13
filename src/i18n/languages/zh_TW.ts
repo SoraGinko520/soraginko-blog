@@ -2,6 +2,15 @@ import Key from "../i18nKey";
 import type { Translation } from "../translation";
 
 export const zh_TW: Translation = {
+	[Key.compatibilityNoticeTitle]: "外掛相容性提醒",
+	[Key.compatibilityNoticeSummary]:
+		"攔截外掛可能影響訪問統計，不影響文章正文閱讀。",
+	[Key.compatibilityNoticeDetails]: "查看說明",
+	[Key.compatibilityNoticeImpact]:
+		"uBlock Origin 等外掛可能阻止不蒜子請求，統計卡會僅顯示歷史基數，或提示暫不可用。這不代表歷史記錄遺失。",
+	[Key.compatibilityNoticeChoice]:
+		"如果願意啟用統計，可僅為本站新增例外；無需關閉整個外掛。繼續保留攔截也完全可以。",
+	[Key.compatibilityNoticeClose]: "關閉相容性提醒",
 	[Key.lifeAnimeNoResults]: "沒有符合的番劇或追劇，試試其他關鍵字或分類。",
 	[Key.lifeAnime]: "番劇",
 	[Key.lifeDrama]: "追劇",
